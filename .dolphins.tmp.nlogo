@@ -11,7 +11,7 @@ dolphins-own [fish-eaten]
 
 
 ;; Setup procedure
-to setups
+to setup
   clear-all
   set total-fish-eaten 0
   set fish-speed 1         ;; Default value; adjustable via slider
@@ -141,13 +141,13 @@ GRAPHICS-WINDOW
 0
 1
 ticks
-30.0
+60.0
 
 SLIDER
+220
 33
-39
-205
-72
+392
+66
 initial-dolphins
 initial-dolphins
 0
@@ -159,25 +159,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-219
-39
-391
-72
+35
+32
+207
+65
 initial-fish
 initial-fish
 0
 100
-0.0
+5.0
 5
 1
 NIL
 HORIZONTAL
 
 SLIDER
-29
-124
-203
-157
+31
+79
+205
+112
 fish-vision-range
 fish-vision-range
 0
@@ -189,10 +189,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-217
-124
-419
-157
+219
+79
+421
+112
 dolphin-vision-range
 dolphin-vision-range
 0
@@ -238,10 +238,10 @@ NIL
 0
 
 SLIDER
-77
-233
-249
-266
+31
+128
+203
+161
 fish-speed
 fish-speed
 0.1
@@ -253,19 +253,39 @@ NIL
 HORIZONTAL
 
 SLIDER
-82
-283
-254
-316
+219
+128
+391
+161
 dolphin-speed
 dolphin-speed
 0.1
 5
-2.1
+1.5
 0.5
 1
 NIL
 HORIZONTAL
+
+PLOT
+146
+201
+346
+351
+Population and Fish Eaten
+Time
+Count
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"Fish Population" 1.0 0 -13345367 true "" "plot count fishes"
+"Total Fish Eaten" 1.0 0 -10899396 true "" "plot total-fish-eaten"
+"plot total-fish-eaten" 1.0 0 -2674135 true "" "plot count dolphins"
 
 @#$#@#$#@
 ## WHAT IS IT?
