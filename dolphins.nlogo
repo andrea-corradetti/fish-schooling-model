@@ -3,8 +3,6 @@ breed [dolphins dolphin]
 
 directed-link-breed [chase-links chase-link]
 
-globals [total-fish-eaten]  ;; Counter for fish eaten
-
 turtles-own [
   vision-range  ;; Distance at which agents detect others
 ]
@@ -18,11 +16,20 @@ dolphins-own [
   fish-eaten
   chasing-target
 ]
+globals [
+  total-fish-eaten
+  default-fish-speed
+  default-dolphin-speed
+  default-fish-count
+  default-dolphin-count
+  default-vision-range
+]
 
 
 ;; Setup procedure
 to setup
   clear-all
+  setup-defaults
   set total-fish-eaten 0
   set fish-speed 1         ;; Default value; adjustable via slider
   set dolphin-speed 1.5    ;; Default value; adjustable via slider
@@ -45,7 +52,29 @@ to setup
   reset-ticks
 end
 
+to setup-defaults
+  ;; Define default values
+  set default-fish-speed 1
+  set default-dolphin-speed 1.5
+  set default-fish-count 50
+  set default-dolphin-count 5
+  set default-vision-range 5
+end
 
+;; Button procedure
+to reset-defaults
+  ;; Assign default values to sliders and globals
+  set fish-speed default-fish-speed
+  set dolphin-speed default-dolphin-speed
+  set initial-fish default-fish-count
+  set initial-dolphins default-dolphin-count
+  set fish-vision-range default-vision-range
+  set dolphin-vision-range default-vision-range
+
+  if enable-reproduction [set enable-reproduction false]
+end
+
+;; Button procedure
 to go
   if not any? fishes [ stop ]  ;; End simulation if no fishes remain
 
@@ -106,6 +135,14 @@ to move-randomly-dolphin
   rt random-turn
   fd dolphin-speed
 end
+
+to move-with-speed [speed]
+  ;; Move using the mathematical formula
+  let delta-x speed * cos heading  ;; X component of movement
+  let delta-y speed * sin heading  ;; Y component of movement
+  setxy (xcor + delta-x) (ycor + delta-y)  ;; Update position using delta-x and delta-y
+end
+
 
 to perform-dolphin-behaviors
   let target min-one-of fishes in-radius vision-range [distance myself]
@@ -182,7 +219,7 @@ initial-dolphins
 initial-dolphins
 0
 100
-2.0
+0.0
 1
 1
 NIL
@@ -197,7 +234,7 @@ initial-fish
 initial-fish
 0
 100
-10.0
+0.0
 5
 1
 NIL
@@ -212,7 +249,7 @@ fish-vision-range
 fish-vision-range
 0
 100
-15.0
+0.0
 5
 1
 NIL
@@ -227,7 +264,7 @@ dolphin-vision-range
 dolphin-vision-range
 0
 100
-15.0
+0.0
 1
 1
 NIL
@@ -276,7 +313,7 @@ fish-speed
 fish-speed
 0.1
 5
-1.0
+0.0
 0.5
 1
 NIL
@@ -291,7 +328,7 @@ dolphin-speed
 dolphin-speed
 0.1
 5
-1.5
+0.0
 0.5
 1
 NIL
@@ -342,6 +379,23 @@ enable-reproduction
 1
 1
 -1000
+
+BUTTON
+138
+591
+271
+624
+NIL
+reset-defaults
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
