@@ -1,24 +1,29 @@
 breed [fishes fish]
 breed [dolphins dolphin]
 
-globals [fish-eaten]  ;; Counter for fish eaten
+globals [total-fish-eaten]  ;; Counter for fish eaten
 
 turtles-own [
   vision-range  ;; Distance at which agents detect others
 ]
 
+dolphins-own [fish-eaten]
+
+
 ;; Setup procedure
-to setup
+to setups
   clear-all
-  set fish-eaten 0
-  create-fishes 50 [  ;; Replace 50 with slider variable later
+  set total-fish-eaten 0
+  set fish-speed 1         ;; Default value; adjustable via slider
+  set dolphin-speed 1.5    ;; Default value; adjustable via slider
+  create-fishes initial-fish [  ;; Replace 50 with slider variable later
     set color blue
     set shape "fish"
     set size 1
     set vision-range 5
     setxy random-xcor random-ycor
   ]
-  create-dolphins 5 [  ;; Replace 5 with slider variable later
+  create-dolphins initial-dolphins [  ;; Replace 5 with slider variable later
     set color red
     set shape "shark"
     set size 1.5
@@ -40,8 +45,74 @@ to go
     perform-dolphin-behaviors
   ]
 
+  update-total-fish-eaten  ;; Update global sum
+
+
   tick
 end
+
+
+to perform-fish-behaviors
+  if any? dolphins in-radius vision-range [
+    flee-from-dolphin
+  ]
+  move-randomly-fish
+end
+
+to flee-from-dolphin
+  let predator min-one-of dolphins in-radius vision-range [distance myself]
+  if predator != nobody [
+    face predator
+    rt 180  ;; Turn away from the predator
+    forward-step-fish
+  ]
+end
+
+to move-randomly-fish
+  rt random 360
+  forward-step-fish
+end
+
+to forward-step-fish
+  fd fish-speed
+end
+
+to forward-step-dolphin
+  fd dolphin-speed
+end
+
+
+to perform-dolphin-behaviors
+  let target one-of fishes in-radius vision-range
+  ifelse target != nobody [
+    move-towards target
+    if distance target < 1 [ consume-fish target ]
+  ] [
+    move-randomly-dolphin
+  ]
+end
+
+to move-towards [target]
+  face target
+  forward-step-dolphin
+end
+
+to move-randomly-dolphin
+  rt random 360
+  forward-step-dolphin
+end
+
+
+to consume-fish [prey]
+  ask prey [ die ]  ;; Remove the fish from the simulation
+  set fish-eaten fish-eaten + 1
+end
+
+
+to update-total-fish-eaten
+  set total-fish-eaten sum [fish-eaten] of dolphins
+end
+
 
 
 @#$#@#$#@
@@ -81,7 +152,7 @@ initial-dolphins
 initial-dolphins
 0
 100
-5.0
+0.0
 1
 1
 NIL
@@ -96,8 +167,8 @@ initial-fish
 initial-fish
 0
 100
-10.0
-1
+0.0
+5
 1
 NIL
 HORIZONTAL
@@ -111,8 +182,8 @@ fish-vision-range
 fish-vision-range
 0
 100
-50.0
-1
+10.0
+5
 1
 NIL
 HORIZONTAL
@@ -133,10 +204,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-69
-249
-142
-282
+91
+368
+164
+401
 NIL
 setup
 NIL
@@ -150,10 +221,10 @@ NIL
 1
 
 BUTTON
-203
-248
-266
-281
+225
+367
+288
+400
 NIL
 go
 T
@@ -165,6 +236,36 @@ NIL
 NIL
 NIL
 0
+
+SLIDER
+77
+233
+249
+266
+fish-speed
+fish-speed
+0.1
+5
+1.0
+0.5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+82
+283
+254
+316
+dolphin-speed
+dolphin-speed
+0.1
+5
+2.1
+0.5
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
