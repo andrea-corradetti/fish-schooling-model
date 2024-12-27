@@ -28,6 +28,7 @@ to setup
     set shape "shark"
     set size 1.5
     set vision-range 7
+    set fish-eaten 0
     setxy random-xcor random-ycor
   ]
   reset-ticks
@@ -47,7 +48,6 @@ to go
 
   update-total-fish-eaten  ;; Update global sum
 
-
   tick
 end
 
@@ -64,21 +64,27 @@ to flee-from-dolphin
   if predator != nobody [
     face predator
     rt 180  ;; Turn away from the predator
-    forward-step-fish
+    move-with-speed fish-speed
   ]
 end
 
 to move-randomly-fish
-  rt random 360
-  forward-step-fish
+  let random-turn (random-float 180 - 90)  ;; Uniform random angle in [-90°, +90°]
+  rt random-turn                           ;; Turn right by the random angle
+  move-with-speed fish-speed               ;; Move forward using speed
 end
 
-to forward-step-fish
-  fd fish-speed
+to move-randomly-dolphin
+  let random-turn (random-float 360)  ;; Dolphins can turn fully randomly
+  rt random-turn
+  move-with-speed dolphin-speed
 end
 
-to forward-step-dolphin
-  fd dolphin-speed
+to move-with-speed [speed]
+  ;; Move using the mathematical formula
+  let delta-x speed * cos heading  ;; X component of movement
+  let delta-y speed * sin heading  ;; Y component of movement
+  setxy (xcor + delta-x) (ycor + delta-y)  ;; Update position using delta-x and delta-y
 end
 
 
@@ -94,12 +100,7 @@ end
 
 to move-towards [target]
   face target
-  forward-step-dolphin
-end
-
-to move-randomly-dolphin
-  rt random 360
-  forward-step-dolphin
+  move-with-speed dolphin-speed
 end
 
 
