@@ -7,6 +7,10 @@ turtles-own [
   vision-range  ;; Distance at which agents detect others
 ]
 
+fishes-own [
+  time-since-reproduction
+]
+
 dolphins-own [fish-eaten]
 
 
@@ -21,6 +25,7 @@ to setup
     set shape "fish"
     set size 1
     set vision-range 5
+    set time-since-reproduction 0
     setxy random-xcor random-ycor
   ]
   create-dolphins initial-dolphins [  ;; Replace 5 with slider variable later
@@ -53,10 +58,25 @@ end
 
 
 to perform-fish-behaviors
+  set time-since-reproduction time-since-reproduction + 1
+  if enable-reproduction and time-since-reproduction > reproduction-interval [
+    reproduce
+    set time-since-reproduction 0  ;; Reset timer
+  ]
+
   if any? dolphins in-radius vision-range [
     flee-from-dolphin
   ]
+
   move-randomly-fish
+end
+
+to reproduce
+  hatch 1 [
+    set size 1
+    set time-since-reproduction 0
+    setxy xcor + random-float 1 - 0.5 ycor + random-float 1 - 0.5  ;; Nearby position
+  ]
 end
 
 to flee-from-dolphin
@@ -113,7 +133,6 @@ end
 to update-total-fish-eaten
   set total-fish-eaten sum [fish-eaten] of dolphins
 end
-
 
 
 @#$#@#$#@
@@ -198,7 +217,7 @@ dolphin-vision-range
 dolphin-vision-range
 0
 100
-50.0
+13.0
 1
 1
 NIL
@@ -269,10 +288,10 @@ NIL
 HORIZONTAL
 
 PLOT
-93
-177
-356
-356
+151
+180
+414
+359
 Population and Fish Eaten
 Time
 Count
@@ -287,6 +306,32 @@ PENS
 "Fish Population" 1.0 0 -13345367 true "" "plot count fishes"
 "Total Fish Eaten" 1.0 0 -10899396 true "" "plot total-fish-eaten"
 "plot total-fish-eaten" 1.0 0 -2674135 true "" "plot count dolphins"
+
+SLIDER
+128
+386
+374
+419
+reproduction-interval
+reproduction-interval
+10
+120
+23.0
+1
+1
+ticks
+HORIZONTAL
+
+SWITCH
+9
+264
+185
+297
+enable-reproduction
+enable-reproduction
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
