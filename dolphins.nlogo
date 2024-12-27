@@ -25,7 +25,7 @@ to setup
     set color blue
     set shape "fish"
     set size 1
-    set vision-range 5
+    set vision-range fish-vision-range
     set time-since-reproduction 0
     setxy random-xcor random-ycor
   ]
@@ -33,7 +33,7 @@ to setup
     set color red
     set shape "shark"
     set size 1.5
-    set vision-range 7
+    set vision-range dolphin-vision-range
     set fish-eaten 0
     setxy random-xcor random-ycor
   ]
@@ -66,11 +66,9 @@ to perform-fish-behaviors
     set time-since-reproduction 0  ;; Reset timer
   ]
 
-  if any? dolphins in-radius vision-range [
+  ifelse any? dolphins in-radius vision-range [
     flee-from-dolphin
   ]
-
-  move-randomly-fish
 end
 
 to reproduce
@@ -86,20 +84,20 @@ to flee-from-dolphin
   if predator != nobody [
     face predator
     rt 180  ;; Turn away from the predator
-    move-with-speed fish-speed
+    fd fish-speed
   ]
 end
 
 to move-randomly-fish
   let random-turn (random-float 180 - 90)  ;; Uniform random angle in [-90°, +90°]
   rt random-turn                           ;; Turn right by the random angle
-  move-with-speed fish-speed               ;; Move forward using speed
+  fd fish-speed               ;; Move forward using speed
 end
 
 to move-randomly-dolphin
   let random-turn (random-float 360)  ;; Dolphins can turn fully randomly
   rt random-turn
-  move-with-speed dolphin-speed
+  fd dolphin-speed
 end
 
 to move-with-speed [speed]
