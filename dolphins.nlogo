@@ -136,7 +136,10 @@ to update-total-fish-eaten
   set total-fish-eaten sum [fish-eaten] of dolphins
 end
 
-
+to-report average-fish-eaten
+  if count dolphins = 0 [ report 0 ]
+  report mean [fish-eaten] of dolphins
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 439
@@ -325,10 +328,10 @@ ticks
 HORIZONTAL
 
 SWITCH
-9
-264
-185
-297
+146
+503
+322
+536
 enable-reproduction
 enable-reproduction
 1
