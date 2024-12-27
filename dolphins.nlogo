@@ -1,6 +1,8 @@
 breed [fishes fish]
 breed [dolphins dolphin]
 
+directed-link-breed [chase-links chase-link]
+
 globals [total-fish-eaten]  ;; Counter for fish eaten
 
 turtles-own [
@@ -12,7 +14,10 @@ fishes-own [
   time-alive
 ]
 
-dolphins-own [fish-eaten]
+dolphins-own [
+  fish-eaten
+  chasing-target
+]
 
 
 ;; Setup procedure
@@ -68,6 +73,8 @@ to perform-fish-behaviors
 
   ifelse any? dolphins in-radius vision-range [
     flee-from-dolphin
+  ] [
+    move-randomly-fish
   ]
 end
 
@@ -100,17 +107,15 @@ to move-randomly-dolphin
   fd dolphin-speed
 end
 
-to move-with-speed [speed]
-  ;; Move using the mathematical formula
-  let delta-x speed * cos heading  ;; X component of movement
-  let delta-y speed * sin heading  ;; Y component of movement
-  setxy (xcor + delta-x) (ycor + delta-y)  ;; Update position using delta-x and delta-y
-end
-
-
 to perform-dolphin-behaviors
-  let target one-of fishes in-radius vision-range
+  let target min-one-of fishes in-radius vision-range [distance myself]
+  if target != chasing-target [
+    ask chase-links with [end1 = myself] [ die ]
+    set chasing-target target
+  ]
+
   ifelse target != nobody [
+    create-chase-link-to target
     move-towards target
     if distance target < 1 [ consume-fish target ]
   ] [
@@ -120,12 +125,14 @@ end
 
 to move-towards [target]
   face target
-  move-with-speed dolphin-speed
+  fd dolphin-speed
 end
 
 
 to consume-fish [prey]
   ask prey [ die ]  ;; Remove the fish from the simulation
+  ask chase-links with [end1 = myself] [ die ]  ;; Remove the link to the eaten fish
+  set chasing-target nobody  ;; Clear the chasing target
   set fish-eaten fish-eaten + 1
 end
 
@@ -175,7 +182,7 @@ initial-dolphins
 initial-dolphins
 0
 100
-8.0
+2.0
 1
 1
 NIL
@@ -190,7 +197,7 @@ initial-fish
 initial-fish
 0
 100
-20.0
+10.0
 5
 1
 NIL
@@ -205,7 +212,7 @@ fish-vision-range
 fish-vision-range
 0
 100
-10.0
+15.0
 5
 1
 NIL
@@ -220,7 +227,7 @@ dolphin-vision-range
 dolphin-vision-range
 0
 100
-13.0
+15.0
 1
 1
 NIL
@@ -319,7 +326,7 @@ reproduction-interval
 reproduction-interval
 10
 120
-23.0
+10.0
 1
 1
 ticks
