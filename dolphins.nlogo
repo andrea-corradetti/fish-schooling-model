@@ -9,6 +9,7 @@ turtles-own [
 
 fishes-own [
   time-since-reproduction
+  time-alive
 ]
 
 dolphins-own [fish-eaten]
@@ -45,6 +46,7 @@ to go
 
   ask fishes [
     perform-fish-behaviors
+    set time-alive time-alive + 1
   ]
 
   ask dolphins [
