@@ -1,3 +1,7 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; GLOBALS AND BREEDS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 breed [fishes fish]
 breed [dolphins dolphin]
 
@@ -16,8 +20,8 @@ dolphins-own [
   fish-eaten
   chasing-target
 ]
+
 globals [
-  total-fish-eaten
   default-fish-speed
   default-dolphin-speed
   default-fish-count
@@ -25,15 +29,16 @@ globals [
   default-vision-range
 ]
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SETUP AND DEFAULTS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Setup procedure
 to setup
   clear-all
   setup-defaults
-  set total-fish-eaten 0
-  set fish-speed 1         ;; Default value; adjustable via slider
-  set dolphin-speed 1.5    ;; Default value; adjustable via slider
-  create-fishes initial-fish [  ;; Replace 50 with slider variable later
+  reset-defaults
+
+  create-fishes initial-fish [
     set color blue
     set shape "fish"
     set size 1
@@ -41,7 +46,8 @@ to setup
     set time-since-reproduction 0
     setxy random-xcor random-ycor
   ]
-  create-dolphins initial-dolphins [  ;; Replace 5 with slider variable later
+
+  create-dolphins initial-dolphins [
     set color red
     set shape "shark"
     set size 1.5
@@ -49,6 +55,7 @@ to setup
     set fish-eaten 0
     setxy random-xcor random-ycor
   ]
+
   reset-ticks
 end
 
@@ -63,7 +70,6 @@ end
 
 ;; Button procedure
 to reset-defaults
-  ;; Assign default values to sliders and globals
   set fish-speed default-fish-speed
   set dolphin-speed default-dolphin-speed
   set initial-fish default-fish-count
@@ -73,6 +79,12 @@ to reset-defaults
 
   if enable-reproduction [set enable-reproduction false]
 end
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; MAIN LOOP
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;; Button procedure
 to go
@@ -87,10 +99,36 @@ to go
     perform-dolphin-behaviors
   ]
 
-  update-total-fish-eaten  ;; Update global sum
-
   tick
 end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; MOVEMENT
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to move-randomly [turn-angle speed]
+  ;; Perform random movement within a specified turn angle
+  let random-turn (random-float turn-angle - turn-angle / 2)
+  rt random-turn
+  fd speed
+end
+
+to flee [predator speed]
+  ;; Flee from a predator
+  face predator
+  rt 180
+  fd speed
+end
+
+to move-towards [target speed]
+  face target
+  fd speed
+end
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; FISH BEHAVIORS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 to perform-fish-behaviors
@@ -101,7 +139,8 @@ to perform-fish-behaviors
   ]
 
   ifelse any? dolphins in-radius vision-range [
-    flee-from-dolphin
+    let predator min-one-of dolphins in-radius vision-range [distance myself]
+    flee predator fish-speed
   ] [
     move-randomly-fish
   ]
@@ -125,27 +164,17 @@ to flee-from-dolphin
 end
 
 to move-randomly-fish
-  let random-turn (random-float 180 - 90)  ;; Uniform random angle in [-90°, +90°]
-  rt random-turn                           ;; Turn right by the random angle
-  fd fish-speed               ;; Move forward using speed
+  move-randomly 180 fish-speed
 end
 
-to move-randomly-dolphin
-  let random-turn (random-float 360)  ;; Dolphins can turn fully randomly
-  rt random-turn
-  fd dolphin-speed
-end
-
-to move-with-speed [speed]
-  ;; Move using the mathematical formula
-  let delta-x speed * cos heading  ;; X component of movement
-  let delta-y speed * sin heading  ;; Y component of movement
-  setxy (xcor + delta-x) (ycor + delta-y)  ;; Update position using delta-x and delta-y
-end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; DOLPHIN BEHAVIORS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 to perform-dolphin-behaviors
   let target min-one-of fishes in-radius vision-range [distance myself]
+
   if target != chasing-target [
     ask chase-links with [end1 = myself] [ die ]
     set chasing-target target
@@ -153,18 +182,16 @@ to perform-dolphin-behaviors
 
   ifelse target != nobody [
     create-chase-link-to target
-    move-towards target
+    move-towards target dolphin-speed
     if distance target < 1 [ consume-fish target ]
   ] [
     move-randomly-dolphin
   ]
 end
 
-to move-towards [target]
-  face target
-  fd dolphin-speed
+to move-randomly-dolphin
+  move-randomly 360 dolphin-speed
 end
-
 
 to consume-fish [prey]
   ask prey [ die ]  ;; Remove the fish from the simulation
@@ -173,9 +200,12 @@ to consume-fish [prey]
   set fish-eaten fish-eaten + 1
 end
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; REPORTING METRICS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to update-total-fish-eaten
-  set total-fish-eaten sum [fish-eaten] of dolphins
+to-report total-fish-eaten
+  report sum [fish-eaten] of dolphins
 end
 
 to-report average-fish-eaten
@@ -204,8 +234,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 60.0
@@ -219,7 +249,7 @@ initial-dolphins
 initial-dolphins
 0
 100
-0.0
+5.0
 1
 1
 NIL
@@ -234,7 +264,7 @@ initial-fish
 initial-fish
 0
 100
-0.0
+50.0
 5
 1
 NIL
@@ -249,7 +279,7 @@ fish-vision-range
 fish-vision-range
 0
 100
-0.0
+5.0
 5
 1
 NIL
@@ -264,7 +294,7 @@ dolphin-vision-range
 dolphin-vision-range
 0
 100
-0.0
+5.0
 1
 1
 NIL
@@ -313,7 +343,7 @@ fish-speed
 fish-speed
 0.1
 5
-0.0
+1.0
 0.5
 1
 NIL
@@ -328,7 +358,7 @@ dolphin-speed
 dolphin-speed
 0.1
 5
-0.0
+0.1
 0.5
 1
 NIL
