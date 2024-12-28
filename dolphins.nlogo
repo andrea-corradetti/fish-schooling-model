@@ -122,7 +122,9 @@ end
 
 to move-towards [target speed]
   face target
-  fd speed
+  let distance-to-target distance target
+  let adjusted-speed min (list speed distance-to-target)  ;; Slow down when close
+  fd adjusted-speed
 end
 
 
@@ -358,7 +360,7 @@ dolphin-speed
 dolphin-speed
 0.1
 5
-0.1
+4.6
 0.5
 1
 NIL
