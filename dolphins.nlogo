@@ -35,7 +35,6 @@ globals [
 
 to setup
   clear-all
-  setup-defaults
   reset-defaults
 
   create-fishes initial-fish [
@@ -59,23 +58,14 @@ to setup
   reset-ticks
 end
 
-to setup-defaults
-  ;; Define default values
-  set default-fish-speed 1
-  set default-dolphin-speed 1.5
-  set default-fish-count 50
-  set default-dolphin-count 5
-  set default-vision-range 5
-end
-
 ;; Button procedure
 to reset-defaults
-  set fish-speed default-fish-speed
-  set dolphin-speed default-dolphin-speed
-  set initial-fish default-fish-count
-  set initial-dolphins default-dolphin-count
-  set fish-vision-range default-vision-range
-  set dolphin-vision-range default-vision-range
+  set fish-speed 1
+  set dolphin-speed 1.5
+  set initial-fish 50
+  set initial-dolphins 5
+  set fish-vision-range 5
+  set dolphin-vision-range 5
 
   if enable-reproduction [set enable-reproduction false]
 end
