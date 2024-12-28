@@ -12,6 +12,9 @@ turtles-own [
 ]
 
 fishes-own [
+  schoolmates         ;; agentset of nearby fishes
+  nearest-neighbor    ;; closest fish in the schoolmates
+  current-direction   ;; fish's current movement direction
   time-since-reproduction
   time-alive
 ]
@@ -35,7 +38,6 @@ globals [
 
 to setup
   clear-all
-  reset-defaults
 
   create-fishes initial-fish [
     set color blue
@@ -66,7 +68,6 @@ to reset-defaults
   set initial-dolphins 5
   set fish-vision-range 5
   set dolphin-vision-range 5
-
   if enable-reproduction [set enable-reproduction false]
 end
 
@@ -130,6 +131,10 @@ to perform-fish-behaviors
     set time-since-reproduction 0  ;; Reset timer
   ]
 
+  if model-version = "schooling" [
+    school
+  ]
+
   ifelse any? dolphins in-radius vision-range [
     let predator min-one-of dolphins in-radius vision-range [distance myself]
     flee predator fish-speed
@@ -149,6 +154,89 @@ end
 to move-randomly-fish
   move-randomly 180 fish-speed
 end
+
+
+;;; SCHOOLING
+
+to school  ;; turtle procedure
+  find-schoolmates
+  if any? schoolmates [
+    find-nearest-neighbor
+    ifelse distance nearest-neighbor < minimum-separation [
+      separate
+    ] [
+      align
+      cohere
+    ]
+  ]
+end
+
+to find-schoolmates
+  set schoolmates other fishes in-radius vision-range
+end
+
+to find-nearest-neighbor
+  set nearest-neighbor min-one-of schoolmates [distance myself]
+end
+
+to separate
+    turn-away ([heading] of nearest-neighbor) max-separate-turn
+end
+
+;;; ALIGN
+
+to align  ;; turtle procedure
+  turn-towards average-schoolmate-heading max-align-turn
+end
+
+to-report average-schoolmate-heading  ;; turtle procedure
+  ;; We can't just average the heading variables here.
+  ;; For example, the average of 1 and 359 should be 0,
+  ;; not 180.  So we have to use trigonometry.
+  let x-component sum [dx] of schoolmates
+  let y-component sum [dy] of schoolmates
+  ifelse x-component = 0 and y-component = 0
+    [ report heading ]
+    [ report atan x-component y-component ]
+end
+
+;;; COHERE
+
+to cohere  ;; turtle procedure
+  turn-towards average-heading-towards-schoolmates max-cohere-turn
+end
+
+to-report average-heading-towards-schoolmates  ;; turtle procedure
+  ;; "towards myself" gives us the heading from the other turtle
+  ;; to me, but we want the heading from me to the other turtle,
+  ;; so we add 180
+  let x-component mean [sin (towards myself + 180)] of schoolmates
+  let y-component mean [cos (towards myself + 180)] of schoolmates
+  ifelse x-component = 0 and y-component = 0
+    [ report heading ]
+    [ report atan x-component y-component ]
+end
+
+;;; HELPER PROCEDURES
+
+to turn-towards [new-heading max-turn]  ;; turtle procedure
+  turn-at-most (subtract-headings new-heading heading) max-turn
+end
+
+to turn-away [new-heading max-turn]  ;; turtle procedure
+  turn-at-most (subtract-headings heading new-heading) max-turn
+end
+
+;; turn right by "turn" degrees (or left if "turn" is negative),
+;; but never turn more than "max-turn" degrees
+to turn-at-most [turn max-turn]  ;; turtle procedure
+  ifelse abs turn > max-turn
+    [ ifelse turn > 0
+        [ rt max-turn ]
+        [ lt max-turn ] ]
+    [ rt turn ]
+end
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; DOLPHIN BEHAVIORS
@@ -232,7 +320,7 @@ initial-dolphins
 initial-dolphins
 0
 100
-5.0
+0.0
 1
 1
 NIL
@@ -247,7 +335,7 @@ initial-fish
 initial-fish
 0
 100
-50.0
+100.0
 5
 1
 NIL
@@ -284,10 +372,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-125
-436
-198
-469
+0
+508
+73
+541
 NIL
 setup
 NIL
@@ -301,10 +389,10 @@ NIL
 1
 
 BUTTON
-259
-435
-322
-468
+0
+463
+63
+496
 NIL
 go
 T
@@ -348,10 +436,10 @@ NIL
 HORIZONTAL
 
 PLOT
-151
-180
-414
-359
+601
+502
+864
+681
 Population and Fish Eaten
 Time
 Count
@@ -368,10 +456,10 @@ PENS
 "plot total-fish-eaten" 1.0 0 -2674135 true "" "plot count dolphins"
 
 SLIDER
-128
-386
-374
-419
+186
+276
+432
+309
 reproduction-interval
 reproduction-interval
 10
@@ -383,10 +471,10 @@ ticks
 HORIZONTAL
 
 SWITCH
-146
-503
-322
-536
+246
+228
+422
+261
 enable-reproduction
 enable-reproduction
 1
@@ -394,10 +482,10 @@ enable-reproduction
 -1000
 
 BUTTON
-138
-591
-271
-624
+0
+556
+133
+589
 NIL
 reset-defaults
 NIL
@@ -409,6 +497,91 @@ NIL
 NIL
 NIL
 1
+
+CHOOSER
+0
+602
+166
+647
+model-version
+model-version
+"base" "schooling"
+1
+
+SLIDER
+265
+500
+473
+533
+minimum-separation
+minimum-separation
+0.1
+10
+0.1
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+26
+223
+223
+256
+max-turn-angle
+max-turn-angle
+45
+360
+180.0
+1
+1
+deg
+HORIZONTAL
+
+SLIDER
+264
+544
+487
+577
+max-separate-turn
+max-separate-turn
+1
+360
+268.0
+1
+1
+deg
+HORIZONTAL
+
+SLIDER
+264
+589
+454
+622
+max-align-turn
+max-align-turn
+1
+360
+270.0
+1
+1
+deg
+HORIZONTAL
+
+SLIDER
+267
+633
+475
+666
+max-cohere-turn
+max-cohere-turn
+1
+360
+270.0
+1
+1
+deg
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
