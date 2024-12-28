@@ -156,15 +156,6 @@ to reproduce
   ]
 end
 
-to flee-from-dolphin
-  let predator min-one-of dolphins in-radius vision-range [distance myself]
-  if predator != nobody [
-    face predator
-    rt 180  ;; Turn away from the predator
-    fd fish-speed
-  ]
-end
-
 to move-randomly-fish
   move-randomly 180 fish-speed
 end
@@ -360,7 +351,7 @@ dolphin-speed
 dolphin-speed
 0.1
 5
-4.6
+1.5
 0.5
 1
 NIL
