@@ -4,8 +4,14 @@
 
 breed [fishes fish]
 breed [dolphins dolphin]
+breed [circles circle]
 
 directed-link-breed [chase-links chase-link]
+undirected-link-breed [comm-links comm-link
+
+circles-own [
+  owner
+]
 
 turtles-own [
   vision-range  ;; Distance at which agents detect others
@@ -17,6 +23,7 @@ fishes-own [
   current-direction   ;; fish's current movement direction
   time-since-reproduction
   time-alive
+  default-shape
 ]
 
 dolphins-own [
@@ -42,6 +49,7 @@ to setup
   create-fishes initial-fish [
     set color blue
     set shape "fish"
+    set default-shape "fish"
     set size 1
     set vision-range fish-vision-range
     set time-since-reproduction 0
@@ -137,11 +145,36 @@ to perform-fish-behaviors
 
   ifelse any? dolphins in-radius vision-range [
     let predator min-one-of dolphins in-radius vision-range [distance myself]
+    ;show-vision-circle
     flee predator fish-speed
   ] [
     move-randomly-fish
+    ;hide-vision-circle
   ]
 end
+
+to show-vision-circle
+  if not any? circles with [(who = [who] of myself)] [
+    hatch-circles 1 [
+      set owner [who] of myself
+      set color green + 2               ;; Lighter green for transparency
+      set size vision-range * 2         ;; Size scaled to match vision range
+      set shape "circle outline"
+      set hidden? false
+    ]
+  ]
+  ask circles with [(who = [who] of myself)] [
+    setxy [xcor] of myself [xcor] of myself      ;; follow with bind xy
+  ]
+end
+
+to hide-vision-circle
+  ask circles with [owner = [who] of myself] [
+    set hidden? true
+  ]
+end
+
+
 
 to reproduce
   hatch 1 [
