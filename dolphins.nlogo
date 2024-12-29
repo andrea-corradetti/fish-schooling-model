@@ -5,9 +5,10 @@
 breed [fishes fish]
 breed [dolphins dolphin]
 breed [circles circle]
+breed [fish-markers fish-marker]
 
 directed-link-breed [chase-links chase-link]
-undirected-link-breed [comm-links comm-link
+undirected-link-breed [comm-links comm-link]
 
 circles-own [
   owner
@@ -30,7 +31,15 @@ dolphins-own [
   fish-eaten
   chasing-target
   communication-range       ;; Maximum distance for communication
-  known-fish-positions      ;; List of pairs: [who [xcor ycor]]
+  markers-in-memory
+]
+
+fish-markers-own [
+  owner
+  fish-id          ;; The ID of the fish being tracked
+  last-known-xcor  ;; Last known x-coordinate of the fish
+  last-known-ycor  ;; Last known y-coordinate of the fish
+  last-updated     ;; Tick when the position was last updated
 ]
 
 globals [
@@ -65,8 +74,7 @@ to setup
     set vision-range dolphin-vision-range
     set fish-eaten 0
     set communication-range dolphin-communication-range
-    set known-fish-positions []
-
+    set markers-in-memory no-turtles
     setxy random-xcor random-ycor
   ]
 
@@ -127,7 +135,7 @@ end
 to move-towards [target speed]
   face target
   let distance-to-target distance target
-  let adjusted-speed min (list speed distance-to-target)  ;; Slow down when close
+  let adjusted-speed min (list speed distance-to-target)  ;; clamp to avoid overshooting
   fd adjusted-speed
 end
 
@@ -194,7 +202,7 @@ to move-randomly-fish
 end
 
 
-;;; SCHOOLING
+;;; SCHOOLING (reproduced from flocking model included with NetLogo)
 
 to school
   find-schoolmates
@@ -223,11 +231,11 @@ end
 
 ;;; ALIGN
 
-to align  ;; turtle procedure
+to align
   turn-towards average-schoolmate-heading max-align-turn
 end
 
-to-report average-schoolmate-heading  ;; turtle procedure
+to-report average-schoolmate-heading
   ;; We can't just average the heading variables here.
   ;; For example, the average of 1 and 359 should be 0,
   ;; not 180.  So we have to use trigonometry.
@@ -240,11 +248,11 @@ end
 
 ;;; COHERE
 
-to cohere  ;; turtle procedure
+to cohere
   turn-towards average-heading-towards-schoolmates max-cohere-turn
 end
 
-to-report average-heading-towards-schoolmates  ;; turtle procedure
+to-report average-heading-towards-schoolmates
   ;; "towards myself" gives us the heading from the other turtle
   ;; to me, but we want the heading from me to the other turtle,
   ;; so we add 180
@@ -257,17 +265,17 @@ end
 
 ;;; HELPER PROCEDURES
 
-to turn-towards [new-heading max-turn]  ;; turtle procedure
+to turn-towards [new-heading max-turn]
   turn-at-most (subtract-headings new-heading heading) max-turn
 end
 
-to turn-away [new-heading max-turn]  ;; turtle procedure
+to turn-away [new-heading max-turn]
   turn-at-most (subtract-headings heading new-heading) max-turn
 end
 
 ;; turn right by "turn" degrees (or left if "turn" is negative),
 ;; but never turn more than "max-turn" degrees
-to turn-at-most [turn max-turn]  ;; turtle procedure
+to turn-at-most [turn max-turn]
   ifelse abs turn > max-turn
     [ ifelse turn > 0
         [ rt max-turn ]
@@ -283,69 +291,29 @@ end
 
 to perform-dolphin-behaviors
   let fishes-in-range fishes in-radius vision-range
-
-  foreach fishes-in-range add-or-update-known-fish
-  delete-known-fish-positions invalid-known-fish-positions
-  broadcast-known-fish-positions
+  if model-version = "hunting" [ communicate fishes-in-range ]
 
   let target min-one-of fishes-in-range [distance myself]
 
+
   if target != chasing-target [
-    ask chase-links with [end1 = myself] [ die ]
+    ask chase-links with [end1 = myself] [ die ] ;; Delete link because outdated
     set chasing-target target
   ]
 
   if target != nobody [
-    create-chase-link-to target
+    create-chase-link-to target ;; Draw link from dolphin to target
     move-towards target dolphin-speed
     if distance target < 1 [ consume-fish target ]
     stop
   ]
 
-  if any? known-fish-positions [
-    let closest-fish first sort-by [[pair] -> distancexy item 0 pair item 1 pair] known-fish-positions
+  if any? markers-in-memory [
+    let closest-fish min-one-of markers-in-memory [distance myself]
     move-towards closest-fish dolphin-speed
   ]
-
 end
 
-to broadcast-known-fish-positions
-  ask dolphins in-radius communication-range [
-    foreach known-fish-positions add-or-update-known-fish
-  ]
-end
-
-
-to-report invalid-known-fish-positions
-;; Initialize a list to track stale coordinates
-  let stale-positions []
-
-  ;; Check all known fish positions
-  foreach known-fish-positions [ f ->
-    let fish-id item 0 f
-    let fish-position item 1 f
-    let actual-fish fishes with [who = fish-id]
-
-    ;; If the fish doesn't exist or is at a different position, mark as stale
-    if not any? actual-fish or [list xcor ycor] of actual-fish != fish-position [
-      set stale-positions lput (list fish-id fish-position) stale-positions
-    ]
-  ]
-
-  report stale-positions
-end
-
-to delete-known-fish-positions [positions]
-  let stale-fish-ids map [pair -> item 0 pair] positions
-  set known-fish-positions filter [pair ->
-    not member? (item 0 pair) stale-fish-ids
-  ] known-fish-positions
-end
-
-
-to move-randomly-dolphin
-  move-randomly 180 dolphin-speed
-end
 
 to consume-fish [prey]
   ask prey [ die ]  ;; Remove the fish from the simulation
@@ -354,23 +322,76 @@ to consume-fish [prey]
   set fish-eaten fish-eaten + 1
 end
 
-to broadcast-fish-location [fish-agent]
+;; Communication for hunting
+
+to communicate [fishes-in-range]
+  foreach [self] of fishes-in-range [ f ->
+    add-or-update-known-fish f
+    broadcast f
+  ]
+
+  foreach [self] of invalid-markers fishes-in-range [ m ->
+    delete-marker m
+    broadcast-delete m
+  ]
+end
+
+to-report invalid-markers [fishes-in-range]
+  let stale-markers no-turtles
+  ask markers-in-memory [
+    let actual-fish one-of fishes-in-range with [who = [fish-id] of self]  ;; TODO broken
+    if not any? actual-fish or distance actual-fish > 1 [
+      set stale-markers (turtle-set stale-markers self)  ;; Add to stale markers
+    ]
+  ]
+  report stale-markers
+end
+
+to delete-marker [marker]
+  ask marker [ die ]
+end
+
+to broadcast-delete [marker]
+  ask dolphins in-radius communication-range [
+    ask markers-in-memory with [is-same-marker self marker] [ die ]
+  ]
+end
+
+
+to-report is-same-marker [a b]
+  report [fish-id] of a = [fish-id] of b
+  and [last-known-xcor] of a = [last-known-xcor] of b
+  and [last-known-ycor] of a = [last-known-ycor] of b
+  and [last-updated] of a = [last-updated] of b
+end
+
+to broadcast [fish-agent]
   ask dolphins in-radius communication-range [
     add-or-update-known-fish fish-agent
   ]
 end
 
 to add-or-update-known-fish [fish-agent]
-  let fish-id [who] of fish-agent
-  let fish-position list ([xcor] of fish-agent) ([ycor] of fish-agent)
-  let existing-entry filter [pair -> item 0 pair = fish-id] known-fish-positions
+  let marker one-of markers-in-memory with [fish-id = [who] of fish-agent]
 
-  ifelse any? existing-entry [
-    ;; Update the position for the existing fish
-    set known-fish-positions replace-item (position first existing-entry known-fish-positions) known-fish-positions (list fish-id fish-position)
-  ]  [
-    ;; Add a new fish entry
-    set known-fish-positions lput (list fish-id fish-position) known-fish-positions
+  ifelse marker != nobody [
+    ask marker [
+      set last-known-xcor [xcor] of fish-agent
+      set last-known-ycor [ycor] of fish-agent
+      set last-updated ticks
+    ]
+  ] [
+    hatch-fish-markers 1 [
+      set owner myself
+      set fish-id [who] of fish-agent
+      set last-known-xcor [xcor] of fish-agent
+      set last-known-ycor [ycor] of fish-agent
+      set last-updated ticks
+      set hidden? true
+      ;set color gray   ;; Optional: visual feedback
+    ]
+    let owned fish-markers with [owner = myself]
+    set markers-in-memory (turtle-set markers-in-memory owned)
   ]
 end
 
@@ -423,8 +444,8 @@ SLIDER
 initial-dolphins
 initial-dolphins
 0
-100
-1.0
+20
+3.0
 1
 1
 NIL
@@ -609,8 +630,8 @@ CHOOSER
 647
 model-version
 model-version
-"base" "schooling"
-1
+"base" "schooling" "hunting"
+2
 
 SLIDER
 265
@@ -696,7 +717,7 @@ dolphin-communication-range
 dolphin-communication-range
 1
 100
-5.0
+56.0
 1
 1
 NIL
