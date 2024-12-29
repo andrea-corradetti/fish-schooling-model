@@ -29,6 +29,8 @@ fishes-own [
 dolphins-own [
   fish-eaten
   chasing-target
+  communication-range       ;; Maximum distance for communication
+  known-fish-positions      ;; List of pairs: [who [xcor ycor]]
 ]
 
 globals [
@@ -62,6 +64,9 @@ to setup
     set size 1.5
     set vision-range dolphin-vision-range
     set fish-eaten 0
+    set communication-range dolphin-communication-range
+    set known-fish-positions []
+
     setxy random-xcor random-ycor
   ]
 
@@ -191,7 +196,7 @@ end
 
 ;;; SCHOOLING
 
-to school  ;; turtle procedure
+to school
   find-schoolmates
   if any? schoolmates [
     find-nearest-neighbor
@@ -277,24 +282,69 @@ end
 
 
 to perform-dolphin-behaviors
-  let target min-one-of fishes in-radius vision-range [distance myself]
+  let fishes-in-range fishes in-radius vision-range
+
+  foreach fishes-in-range add-or-update-known-fish
+  delete-known-fish-positions invalid-known-fish-positions
+  broadcast-known-fish-positions
+
+  let target min-one-of fishes-in-range [distance myself]
 
   if target != chasing-target [
     ask chase-links with [end1 = myself] [ die ]
     set chasing-target target
   ]
 
-  ifelse target != nobody [
+  if target != nobody [
     create-chase-link-to target
     move-towards target dolphin-speed
     if distance target < 1 [ consume-fish target ]
-  ] [
-    move-randomly-dolphin
+    stop
+  ]
+
+  if any? known-fish-positions [
+    let closest-fish first sort-by [[pair] -> distancexy item 0 pair item 1 pair] known-fish-positions
+    move-towards closest-fish dolphin-speed
+  ]
+
+end
+
+to broadcast-known-fish-positions
+  ask dolphins in-radius communication-range [
+    foreach known-fish-positions add-or-update-known-fish
   ]
 end
 
+
+to-report invalid-known-fish-positions
+;; Initialize a list to track stale coordinates
+  let stale-positions []
+
+  ;; Check all known fish positions
+  foreach known-fish-positions [ f ->
+    let fish-id item 0 f
+    let fish-position item 1 f
+    let actual-fish fishes with [who = fish-id]
+
+    ;; If the fish doesn't exist or is at a different position, mark as stale
+    if not any? actual-fish or [list xcor ycor] of actual-fish != fish-position [
+      set stale-positions lput (list fish-id fish-position) stale-positions
+    ]
+  ]
+
+  report stale-positions
+end
+
+to delete-known-fish-positions [positions]
+  let stale-fish-ids map [pair -> item 0 pair] positions
+  set known-fish-positions filter [pair ->
+    not member? (item 0 pair) stale-fish-ids
+  ] known-fish-positions
+end
+
+
 to move-randomly-dolphin
-  move-randomly 360 dolphin-speed
+  move-randomly 180 dolphin-speed
 end
 
 to consume-fish [prey]
@@ -303,6 +353,27 @@ to consume-fish [prey]
   set chasing-target nobody  ;; Clear the chasing target
   set fish-eaten fish-eaten + 1
 end
+
+to broadcast-fish-location [fish-agent]
+  ask dolphins in-radius communication-range [
+    add-or-update-known-fish fish-agent
+  ]
+end
+
+to add-or-update-known-fish [fish-agent]
+  let fish-id [who] of fish-agent
+  let fish-position list ([xcor] of fish-agent) ([ycor] of fish-agent)
+  let existing-entry filter [pair -> item 0 pair = fish-id] known-fish-positions
+
+  ifelse any? existing-entry [
+    ;; Update the position for the existing fish
+    set known-fish-positions replace-item (position first existing-entry known-fish-positions) known-fish-positions (list fish-id fish-position)
+  ]  [
+    ;; Add a new fish entry
+    set known-fish-positions lput (list fish-id fish-position) known-fish-positions
+  ]
+end
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; REPORTING METRICS
@@ -338,8 +409,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-1
-1
+0
+0
 1
 ticks
 60.0
@@ -353,7 +424,7 @@ initial-dolphins
 initial-dolphins
 0
 100
-0.0
+1.0
 1
 1
 NIL
@@ -368,7 +439,7 @@ initial-fish
 initial-fish
 0
 100
-100.0
+35.0
 5
 1
 NIL
@@ -382,9 +453,9 @@ SLIDER
 fish-vision-range
 fish-vision-range
 0
-100
-5.0
-5
+20
+3.0
+1
 1
 NIL
 HORIZONTAL
@@ -462,7 +533,7 @@ dolphin-speed
 dolphin-speed
 0.1
 5
-1.5
+0.6
 0.5
 1
 NIL
@@ -616,6 +687,21 @@ max-cohere-turn
 deg
 HORIZONTAL
 
+SLIDER
+166
+400
+437
+433
+dolphin-communication-range
+dolphin-communication-range
+1
+100
+5.0
+1
+1
+NIL
+HORIZONTAL
+
 @#$#@#$#@
 ## WHAT IS IT?
 
@@ -719,6 +805,11 @@ false
 0
 Circle -7500403 true true 0 0 300
 Circle -16777216 true false 30 30 240
+
+circle outline
+false
+15
+Circle -1 false true 0 0 300
 
 cow
 false
