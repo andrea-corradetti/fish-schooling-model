@@ -323,11 +323,6 @@ to perform-dolphin-behaviors
   move-randomly 180 dolphin-speed
 end
 
-to draw-comm-links
-  ask my-comm-links [die] ;; TODO change this for performance
-  create-comm-links-with other dolphins in-radius communication-range
-end
-
 
 to consume-fish [prey]
   ask prey [ die ]  ;; Remove the fish from the simulation
@@ -338,28 +333,35 @@ end
 
 ;; Communication for hunting
 
+to draw-comm-links
+  ask my-comm-links [die] ;; TODO change this for performance
+  create-comm-links-with other dolphins in-radius communication-range
+end
+
 to communicate [fishes-to-remember]
   show (word "--- begin communicate ---")
-  foreach [self] of fishes-to-remember [ f ->
-    add-or-update-known-fish f
-    broadcast f
-  ]
   foreach [self] of invalid-markers-of self [ m ->
     broadcast-delete m
     delete-marker m
   ]
-  let markers-in-memory fish-markers with [owner = self]
+
+  foreach [self] of fishes-to-remember [ f ->
+    add-or-update-known-fish f
+    broadcast f
+  ]
+
+  let markers-in-memory fish-markers with [owner = myself]
   show word "markers: " [self] of markers-in-memory
   show (word "--- end communicate ---")
 end
 
-to-report invalid-markers-of [dolphin-agent]
+to-report invalid-markers-of [dolphin-agent] ;; FIXME marking everything out of fov as stale
   let stale-markers no-turtles
   let markers-in-memory fish-markers with [owner = dolphin-agent]
-  ask markers-in-memory [
+  ask markers-in-memory in-radius vision-range [
     let actual-fish one-of ([fishes-in-range] of dolphin-agent) with [who = [fish-id] of myself]
     if actual-fish = nobody or distance actual-fish > 1 [
-      set stale-markers (turtle-set stale-markers self)  ;; Add to stale markers
+      set stale-markers (turtle-set stale-markers self)
     ]
   ]
   report stale-markers
@@ -467,7 +469,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-5.0
+2.0
 1
 1
 NIL
@@ -482,8 +484,8 @@ initial-fish
 initial-fish
 0
 100
-50.0
-5
+3.0
+1
 1
 NIL
 HORIZONTAL
@@ -512,17 +514,17 @@ dolphin-vision-range
 dolphin-vision-range
 0
 100
-5.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-0
-508
-73
-541
+2
+341
+75
+374
 NIL
 setup
 NIL
@@ -536,10 +538,10 @@ NIL
 1
 
 BUTTON
-0
-463
-63
-496
+2
+296
+65
+329
 NIL
 go
 T
@@ -583,10 +585,10 @@ NIL
 HORIZONTAL
 
 PLOT
-601
-502
-864
-681
+1191
+78
+1454
+257
 Population and Fish Eaten
 Time
 Count
@@ -629,10 +631,10 @@ enable-reproduction
 -1000
 
 BUTTON
-0
-556
-133
-589
+2
+389
+135
+422
 NIL
 reset-defaults
 NIL
@@ -646,25 +648,25 @@ NIL
 1
 
 CHOOSER
-0
-602
-166
-647
+916
+138
+1082
+183
 model-version
 model-version
 "base" "schooling" "hunting"
 2
 
 SLIDER
-265
-500
-473
-533
+919
+212
+1127
+245
 minimum-separation
 minimum-separation
 0.1
 10
-0.1
+3.8
 0.1
 1
 NIL
@@ -686,10 +688,10 @@ deg
 HORIZONTAL
 
 SLIDER
-264
-544
-487
-577
+919
+256
+1142
+289
 max-separate-turn
 max-separate-turn
 1
@@ -701,25 +703,25 @@ deg
 HORIZONTAL
 
 SLIDER
-264
-589
-454
-622
+919
+301
+1109
+334
 max-align-turn
 max-align-turn
 1
 360
-270.0
+145.0
 1
 1
 deg
 HORIZONTAL
 
 SLIDER
-267
-633
-475
-666
+919
+346
+1127
+379
 max-cohere-turn
 max-cohere-turn
 1
@@ -739,20 +741,31 @@ dolphin-communication-range
 dolphin-communication-range
 1
 100
-87.0
+100.0
 1
 1
 NIL
 HORIZONTAL
 
 SWITCH
-906
-64
-1091
-97
+916
+73
+1101
+106
 visible-comm-links
 visible-comm-links
 0
+1
+-1000
+
+SWITCH
+924
+26
+1081
+59
+enable-debug
+enable-debug
+1
 1
 -1000
 
