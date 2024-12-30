@@ -290,10 +290,14 @@ end
 
 to perform-dolphin-behaviors
   set fishes-in-range fishes in-radius vision-range
-  if model-version = "hunting" [ communicate fishes-in-range ]
+  if model-version = "hunting" [
+    communicate fishes-in-range
+    if visible-comm-links [
+      draw-comm-links
+    ]
+  ]
 
   let target min-one-of fishes-in-range [distance myself]
-
 
   if target != chasing-target [
     ask chase-links with [end1 = myself] [ die ] ;; Delete link because outdated
@@ -310,10 +314,18 @@ to perform-dolphin-behaviors
   let markers-in-memory fish-markers with [owner = myself]
   if any? markers-in-memory [
     let closest-fish min-one-of markers-in-memory [distance myself]
+    set chasing-target closest-fish
+    create-chase-link-to closest-fish
     move-towards closest-fish dolphin-speed
     stop
   ]
+
   move-randomly 180 dolphin-speed
+end
+
+to draw-comm-links
+  ask my-comm-links [die] ;; TODO change this for performance
+  create-comm-links-with other dolphins in-radius communication-range
 end
 
 
@@ -327,16 +339,18 @@ end
 ;; Communication for hunting
 
 to communicate [fishes-to-remember]
+  show (word "--- begin communicate ---")
   foreach [self] of fishes-to-remember [ f ->
     add-or-update-known-fish f
     broadcast f
   ]
-
   foreach [self] of invalid-markers-of self [ m ->
-    show self
     broadcast-delete m
     delete-marker m
   ]
+  let markers-in-memory fish-markers with [owner = self]
+  show word "markers: " [self] of markers-in-memory
+  show (word "--- end communicate ---")
 end
 
 to-report invalid-markers-of [dolphin-agent]
@@ -356,11 +370,11 @@ to delete-marker [marker]
 end
 
 to broadcast-delete [marker]
+  show (word "broadcast-delete: " marker)
   ask dolphins in-radius communication-range [
     let markers-in-memory fish-markers with [owner = myself] who-are-not marker
-    print [self] of markers-in-memory
     let stale-markers markers-in-memory with [is-same-marker self marker]
-    ask stale-markers [ die ]  ;; TODO broken
+    ask stale-markers [ die ]
   ]
 end
 
@@ -373,7 +387,8 @@ to-report is-same-marker [a b]
 end
 
 to broadcast [fish-agent]
-  ask dolphins in-radius communication-range [
+  show (word "broadcast-add:" fish-agent)
+  ask other dolphins in-radius communication-range [
     add-or-update-known-fish fish-agent
   ]
 end
@@ -384,7 +399,7 @@ to add-or-update-known-fish [fish-agent]
 
   ifelse marker != nobody [
     ask marker [
-      set xcor [xcor] of fish-agent
+      print (word myself ": updated - " self " from " fish-agent)      set xcor [xcor] of fish-agent
       set ycor [ycor] of fish-agent
       set last-updated ticks
     ]
@@ -396,6 +411,7 @@ to add-or-update-known-fish [fish-agent]
       set ycor [ycor] of fish-agent
       set last-updated ticks
       set hidden? true
+      print (word myself ": created - " self " from " fish-agent)
       ;set color gray   ;; Optional: visual feedback
     ]
   ]
@@ -416,10 +432,10 @@ to-report average-fish-eaten
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-439
-27
-876
-465
+464
+16
+901
+454
 -1
 -1
 13.0
@@ -451,7 +467,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-0.0
+5.0
 1
 1
 NIL
@@ -466,7 +482,7 @@ initial-fish
 initial-fish
 0
 100
-0.0
+50.0
 5
 1
 NIL
@@ -663,7 +679,7 @@ max-turn-angle
 max-turn-angle
 45
 360
-180.0
+175.0
 1
 1
 deg
@@ -723,11 +739,22 @@ dolphin-communication-range
 dolphin-communication-range
 1
 100
-53.0
+87.0
 1
 1
 NIL
 HORIZONTAL
+
+SWITCH
+906
+64
+1091
+97
+visible-comm-links
+visible-comm-links
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
