@@ -31,7 +31,6 @@ dolphins-own [
   fish-eaten
   chasing-target
   communication-range       ;; Maximum distance for communication
-  markers-in-memory
   fishes-in-range
 ]
 
@@ -75,7 +74,6 @@ to setup
     set vision-range dolphin-vision-range
     set fish-eaten 0
     set communication-range dolphin-communication-range
-    set markers-in-memory no-turtles
     setxy random-xcor random-ycor
   ]
 
@@ -309,6 +307,7 @@ to perform-dolphin-behaviors
     stop
   ]
 
+  let markers-in-memory fish-markers with [owner = myself]
   if any? markers-in-memory [
     let closest-fish min-one-of markers-in-memory [distance myself]
     move-towards closest-fish dolphin-speed
@@ -340,6 +339,7 @@ end
 
 to-report invalid-markers-of [dolphin-agent]
   let stale-markers no-turtles
+  let markers-in-memory fish-markers with [owner = myself]
   ask markers-in-memory [
     let actual-fish one-of ([fishes-in-range] of dolphin-agent) with [who = [fish-id] of myself]
     if actual-fish = nobody or distance actual-fish > 1 [
@@ -355,6 +355,7 @@ end
 
 to broadcast-delete [marker]
   ask dolphins in-radius communication-range [
+    let markers-in-memory fish-markers with [owner = myself]
     ask markers-in-memory with [is-same-marker self marker] [ die ]  ;; TODO broken
   ]
 end
@@ -374,6 +375,7 @@ to broadcast [fish-agent]
 end
 
 to add-or-update-known-fish [fish-agent]
+  let markers-in-memory fish-markers with [owner = myself]
   let marker one-of markers-in-memory with [fish-id = [who] of fish-agent]
 
   ifelse marker != nobody [
@@ -392,8 +394,6 @@ to add-or-update-known-fish [fish-agent]
       set hidden? true
       ;set color gray   ;; Optional: visual feedback
     ]
-    let owned fish-markers with [owner = myself]
-    set markers-in-memory (turtle-set markers-in-memory owned)
   ]
 end
 
