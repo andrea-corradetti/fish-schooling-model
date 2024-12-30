@@ -311,7 +311,9 @@ to perform-dolphin-behaviors
   if any? markers-in-memory [
     let closest-fish min-one-of markers-in-memory [distance myself]
     move-towards closest-fish dolphin-speed
+    stop
   ]
+  move-randomly 180 dolphin-speed
 end
 
 
@@ -339,7 +341,7 @@ end
 
 to-report invalid-markers-of [dolphin-agent]
   let stale-markers no-turtles
-  let markers-in-memory fish-markers with [owner = myself]
+  let markers-in-memory fish-markers with [owner = dolphin-agent]
   ask markers-in-memory [
     let actual-fish one-of ([fishes-in-range] of dolphin-agent) with [who = [fish-id] of myself]
     if actual-fish = nobody or distance actual-fish > 1 [
@@ -355,8 +357,10 @@ end
 
 to broadcast-delete [marker]
   ask dolphins in-radius communication-range [
-    let markers-in-memory fish-markers with [owner = myself]
-    ask markers-in-memory with [is-same-marker self marker] [ die ]  ;; TODO broken
+    let markers-in-memory fish-markers with [owner = myself] who-are-not marker
+    print [self] of markers-in-memory
+    let stale-markers markers-in-memory with [is-same-marker self marker]
+    ask stale-markers [ die ]  ;; TODO broken
   ]
 end
 
@@ -447,7 +451,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-5.0
+0.0
 1
 1
 NIL
@@ -462,7 +466,7 @@ initial-fish
 initial-fish
 0
 100
-50.0
+0.0
 5
 1
 NIL
