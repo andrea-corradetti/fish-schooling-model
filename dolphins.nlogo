@@ -32,6 +32,7 @@ dolphins-own [
   chasing-target
   communication-range       ;; Maximum distance for communication
   markers-in-memory
+  fishes-in-range
 ]
 
 fish-markers-own [
@@ -290,7 +291,7 @@ end
 
 
 to perform-dolphin-behaviors
-  let fishes-in-range fishes in-radius vision-range
+  set fishes-in-range fishes in-radius vision-range
   if model-version = "hunting" [ communicate fishes-in-range ]
 
   let target min-one-of fishes-in-range [distance myself]
@@ -324,23 +325,24 @@ end
 
 ;; Communication for hunting
 
-to communicate [fishes-in-range]
-  foreach [self] of fishes-in-range [ f ->
+to communicate [fishes-to-remember]
+  foreach [self] of fishes-to-remember [ f ->
     add-or-update-known-fish f
     broadcast f
   ]
 
-  foreach [self] of invalid-markers fishes-in-range [ m ->
-    delete-marker m
+  foreach [self] of invalid-markers-of self [ m ->
+    show self
     broadcast-delete m
+    delete-marker m
   ]
 end
 
-to-report invalid-markers [fishes-in-range]
+to-report invalid-markers-of [dolphin-agent]
   let stale-markers no-turtles
   ask markers-in-memory [
-    let actual-fish one-of fishes-in-range with [who = [fish-id] of self]  ;; TODO broken
-    if not any? actual-fish or distance actual-fish > 1 [
+    let actual-fish one-of ([fishes-in-range] of dolphin-agent) with [who = [fish-id] of myself]
+    if actual-fish = nobody or distance actual-fish > 1 [
       set stale-markers (turtle-set stale-markers self)  ;; Add to stale markers
     ]
   ]
@@ -353,15 +355,15 @@ end
 
 to broadcast-delete [marker]
   ask dolphins in-radius communication-range [
-    ask markers-in-memory with [is-same-marker self marker] [ die ]
+    ask markers-in-memory with [is-same-marker self marker] [ die ]  ;; TODO broken
   ]
 end
 
 
 to-report is-same-marker [a b]
   report [fish-id] of a = [fish-id] of b
-  and [last-known-xcor] of a = [last-known-xcor] of b
-  and [last-known-ycor] of a = [last-known-ycor] of b
+  and [xcor] of a = [xcor] of b
+  and [ycor] of a = [ycor] of b
   and [last-updated] of a = [last-updated] of b
 end
 
@@ -376,16 +378,16 @@ to add-or-update-known-fish [fish-agent]
 
   ifelse marker != nobody [
     ask marker [
-      set last-known-xcor [xcor] of fish-agent
-      set last-known-ycor [ycor] of fish-agent
+      set xcor [xcor] of fish-agent
+      set ycor [ycor] of fish-agent
       set last-updated ticks
     ]
   ] [
     hatch-fish-markers 1 [
       set owner myself
       set fish-id [who] of fish-agent
-      set last-known-xcor [xcor] of fish-agent
-      set last-known-ycor [ycor] of fish-agent
+      set xcor [xcor] of fish-agent
+      set ycor [ycor] of fish-agent
       set last-updated ticks
       set hidden? true
       ;set color gray   ;; Optional: visual feedback
@@ -445,7 +447,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-3.0
+5.0
 1
 1
 NIL
@@ -460,7 +462,7 @@ initial-fish
 initial-fish
 0
 100
-35.0
+50.0
 5
 1
 NIL
@@ -475,7 +477,7 @@ fish-vision-range
 fish-vision-range
 0
 20
-3.0
+5.0
 1
 1
 NIL
@@ -554,7 +556,7 @@ dolphin-speed
 dolphin-speed
 0.1
 5
-0.6
+1.5
 0.5
 1
 NIL
@@ -717,7 +719,7 @@ dolphin-communication-range
 dolphin-communication-range
 1
 100
-56.0
+53.0
 1
 1
 NIL
