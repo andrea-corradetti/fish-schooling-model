@@ -1,3 +1,5 @@
+extensions [ dbscan ]
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; GLOBALS AND BREEDS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,6 +50,7 @@ globals [
   default-fish-count
   default-dolphin-count
   default-vision-range
+  old-cluster-labeling
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,6 +59,8 @@ globals [
 
 to setup
   clear-all
+  set old-cluster-labeling false
+
 
   create-fishes initial-fish [
     set color blue
@@ -104,12 +109,16 @@ to go
   ask fishes [
     perform-fish-behaviors
     set time-alive time-alive + 1
+    ifelse cluster-labeling
+    [ label-clusters ]
+    [ if labeling-was-turned-off [ delete-labels ] ]
   ]
 
   ask dolphins [
     perform-dolphin-behaviors
   ]
 
+  set old-cluster-labeling not not cluster-labeling
   tick
 end
 
@@ -151,7 +160,7 @@ to perform-fish-behaviors
     set time-since-reproduction 0  ;; Reset timer
   ]
 
-  if model-version = "schooling" [
+  if version >= 1 [
     school
   ]
 
@@ -325,9 +334,9 @@ end
 
 
 to consume-fish [prey]
-  ask prey [ die ]  ;; Remove the fish from the simulation
+  ask prey [ die ]
   ask chase-links with [end1 = myself] [ die ]  ;; Remove the link to the eaten fish
-  set chasing-target nobody  ;; Clear the chasing target
+  set chasing-target nobody
   set fish-eaten fish-eaten + 1
 end
 
@@ -339,7 +348,7 @@ to draw-comm-links
 end
 
 to communicate [fishes-to-remember]
-  show (word "--- begin communicate ---")
+  if enable-debug [ show (word "--- begin communicate ---") ]
   foreach [self] of invalid-markers-of self [ m ->
     broadcast-delete m
     delete-marker m
@@ -351,11 +360,13 @@ to communicate [fishes-to-remember]
   ]
 
   let markers-in-memory fish-markers with [owner = myself]
-  show word "markers: " [self] of markers-in-memory
-  show (word "--- end communicate ---")
+  if enable-debug [
+    show word "markers: " [self] of markers-in-memory
+    show (word "--- end communicate ---")
+  ]
 end
 
-to-report invalid-markers-of [dolphin-agent] ;; FIXME marking everything out of fov as stale
+to-report invalid-markers-of [dolphin-agent]
   let stale-markers no-turtles
   let markers-in-memory fish-markers with [owner = dolphin-agent]
   ask markers-in-memory in-radius vision-range [
@@ -372,7 +383,7 @@ to delete-marker [marker]
 end
 
 to broadcast-delete [marker]
-  show (word "broadcast-delete: " marker)
+  if enable-debug [ show (word "broadcast-delete: " marker) ]
   ask dolphins in-radius communication-range [
     let markers-in-memory fish-markers with [owner = myself] who-are-not marker
     let stale-markers markers-in-memory with [is-same-marker self marker]
@@ -389,7 +400,7 @@ to-report is-same-marker [a b]
 end
 
 to broadcast [fish-agent]
-  show (word "broadcast-add:" fish-agent)
+  if enable-debug [ show (word "broadcast-add:" fish-agent) ]
   ask other dolphins in-radius communication-range [
     add-or-update-known-fish fish-agent
   ]
@@ -401,7 +412,8 @@ to add-or-update-known-fish [fish-agent]
 
   ifelse marker != nobody [
     ask marker [
-      print (word myself ": updated - " self " from " fish-agent)      set xcor [xcor] of fish-agent
+      if enable-debug [ print (word myself ": updated - " self " from " fish-agent) ]
+      set xcor [xcor] of fish-agent
       set ycor [ycor] of fish-agent
       set last-updated ticks
     ]
@@ -413,7 +425,7 @@ to add-or-update-known-fish [fish-agent]
       set ycor [ycor] of fish-agent
       set last-updated ticks
       set hidden? true
-      print (word myself ": created - " self " from " fish-agent)
+      if enable-debug [ print (word myself ": created - " self " from " fish-agent) ]
       ;set color gray   ;; Optional: visual feedback
     ]
   ]
@@ -431,6 +443,37 @@ end
 to-report average-fish-eaten
   if count dolphins = 0 [ report 0 ]
   report mean [fish-eaten] of dolphins
+end
+
+to-report max-fish-lifespan
+  report max [time-alive] of fishes
+end
+
+to-report clusters
+  report dbscan:cluster-by-location fishes 3 (vision-range / 2)
+end
+
+to label-clusters
+  (foreach clusters range length clusters [ [c i] ->
+    foreach c [ t -> ask t [ set label i ]
+    ]
+  ])
+end
+
+to delete-labels
+  ask fishes [set label ""]
+end
+
+to-report labeling-was-turned-off
+  report (not cluster-labeling) and old-cluster-labeling
+end
+
+to-report version
+  report (ifelse-value
+    model-version = "base" [ 0 ]
+    model-version = "schooling" [ 1 ]
+    model-version = "hunting" [ 2 ]
+  )
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -454,8 +497,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 60.0
@@ -469,7 +512,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-2.0
+1.0
 1
 1
 NIL
@@ -484,7 +527,7 @@ initial-fish
 initial-fish
 0
 100
-3.0
+57.0
 1
 1
 NIL
@@ -666,7 +709,7 @@ minimum-separation
 minimum-separation
 0.1
 10
-3.8
+3.0
 0.1
 1
 NIL
@@ -768,6 +811,28 @@ enable-debug
 1
 1
 -1000
+
+SWITCH
+925
+402
+1092
+435
+cluster-labeling
+cluster-labeling
+1
+1
+-1000
+
+INPUTBOX
+16
+493
+333
+553
+turtle-ids-to-draw-circles
+list 1 2 3
+1
+0
+String (reporter)
 
 @#$#@#$#@
 ## WHAT IS IT?
