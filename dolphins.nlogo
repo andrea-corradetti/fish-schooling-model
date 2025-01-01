@@ -108,6 +108,9 @@ to go
   ask fishes [
     perform-fish-behaviors
     set time-alive time-alive + 1
+  ]
+
+  ask one-of fishes [
     ifelse cluster-labeling
     [ label-clusters ]
     [ if labeling-was-turned-off [ delete-labels ] ]
@@ -349,14 +352,14 @@ end
 
 to communicate [fishes-to-remember]
   if enable-debug [ show (word "--- begin communicate ---") ]
-  foreach [self] of invalid-markers-of self [ m ->
-    broadcast-delete m
-    delete-marker m
-  ]
-
   foreach [self] of fishes-to-remember [ f ->
     add-or-update-known-fish f
     broadcast f
+  ]
+
+  foreach [self] of invalid-markers-of self [ m ->
+    broadcast-delete m
+    delete-marker m
   ]
 
   let markers-in-memory fish-markers with [owner = myself]
@@ -396,7 +399,7 @@ to-report is-same-marker [a b]
   report [fish-id] of a = [fish-id] of b
   and [xcor] of a = [xcor] of b
   and [ycor] of a = [ycor] of b
-  and [last-updated] of a = [last-updated] of b
+  and [last-updated] of a <= [last-updated] of b
 end
 
 to broadcast [fish-agent]
@@ -450,11 +453,10 @@ to-report max-fish-lifespan
 end
 
 to-report clusters
-  let cluster-min-size 3
-  ifelse count fishes > cluster-min-size
-  [ report dbscan:cluster-by-location fishes cluster-min-size (vision-range / 2) ]
+  let cluster-min-count 3
+  ifelse count fishes > cluster-min-count
+  [ report dbscan:cluster-by-location fishes cluster-min-count (vision-range / 2) ]
   [ report [] ]
-
 end
 
 to label-clusters
@@ -507,7 +509,7 @@ to update-dolphin-fish-plot
   ;; Iterate over each dolphin and plot their fish-eaten count
   (foreach dolphins-list range n [ [d i] ->
     let y [fish-eaten] of d
-    let c hsb (i * 360 / n) 50 75  ;; Assign unique color for each dolphin
+    let c approximate-hsb (i * 360 / n) 50 75  ;; Assign unique color for each dolphin
     create-temporary-plot-pen (word "dolphin-" [who] of d)
     set-plot-pen-mode 1  ;; Bar mode
     set-plot-pen-color c
@@ -561,7 +563,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-6.0
+2.0
 1
 1
 NIL
@@ -576,7 +578,7 @@ initial-fish
 initial-fish
 0
 100
-57.0
+2.0
 1
 1
 NIL
@@ -670,7 +672,7 @@ dolphin-speed
 dolphin-speed
 0.1
 5
-1.5
+1.1
 0.5
 1
 NIL
@@ -856,7 +858,7 @@ SWITCH
 59
 enable-debug
 enable-debug
-1
+0
 1
 -1000
 
@@ -909,6 +911,23 @@ color-dolphins
 0
 1
 -1000
+
+BUTTON
+1266
+380
+1378
+413
+go one tick
+go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
