@@ -22,8 +22,8 @@ turtles-own [
 
 fishes-own [
   schoolmates         ;; agentset of nearby fishes
-  nearest-neighbor    ;; closest fish in the schoolmates
-  current-direction   ;; fish's current movement direction
+  nearest-neighbor
+  current-direction
   time-since-reproduction
   time-alive
   default-shape
@@ -32,15 +32,13 @@ fishes-own [
 dolphins-own [
   fish-eaten
   chasing-target
-  communication-range       ;; Maximum distance for communication
+  communication-range
   fishes-in-range
 ]
 
 fish-markers-own [
   owner
   fish-id          ;; The ID of the fish being tracked
-  last-known-xcor  ;; Last known x-coordinate of the fish
-  last-known-ycor  ;; Last known y-coordinate of the fish
   last-updated     ;; Tick when the position was last updated
 ]
 
@@ -73,7 +71,7 @@ to setup
   ]
 
   create-dolphins initial-dolphins [
-    if enable-debug [show word "created dolphin with color " get-color-for who]
+    if enable-debug [show word "Created with color " get-color-for who]
     set color get-color-for who
     set shape "shark"
     set size 1.5
@@ -335,6 +333,7 @@ end
 
 
 to consume-fish [prey]
+  if enable-debug [ show word "Ate fish " prey ]
   ask prey [ die ]
   ask chase-links with [end1 = myself] [ die ]  ;; Remove the link to the eaten fish
   set chasing-target nobody
