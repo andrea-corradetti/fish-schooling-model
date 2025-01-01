@@ -1,4 +1,4 @@
-extensions [ dbscan ]
+extensions [ dbscan table ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; GLOBALS AND BREEDS
@@ -73,7 +73,8 @@ to setup
   ]
 
   create-dolphins initial-dolphins [
-    set color red
+    if enable-debug [show word "created dolphin with color " get-color-for who]
+    set color get-color-for who
     set shape "shark"
     set size 1.5
     set vision-range dolphin-vision-range
@@ -450,7 +451,11 @@ to-report max-fish-lifespan
 end
 
 to-report clusters
-  report dbscan:cluster-by-location fishes 3 (vision-range / 2)
+  let cluster-min-size 3
+  ifelse count fishes > cluster-min-size
+  [ report dbscan:cluster-by-location fishes cluster-min-size (vision-range / 2) ]
+  [ report [] ]
+
 end
 
 to label-clusters
@@ -475,6 +480,51 @@ to-report version
     model-version = "hunting" [ 2 ]
   )
 end
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; PLOTTING
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report get-color-for [id]
+  let dolphins-list sort [who] of dolphins
+  let i position id dolphins-list
+  let c approximate-hsb (i * 360 / initial-dolphins) 75 85  ;; Unique hue for each dolphin
+  ifelse c = false
+  [ report red ] ;; fallback value
+  [ report c ]
+ end
+
+to update-dolphin-fish-plot
+  set-current-plot "Dolphins and Fish Eaten"
+  clear-plot
+
+  let dolphins-list sort dolphins
+  let n length dolphins-list
+  set-plot-x-range 0 n
+
+  let step 0.05  ;; Tweak for smooth bar stacking
+
+  ;; Iterate over each dolphin and plot their fish-eaten count
+  (foreach dolphins-list range n [ [d i] ->
+    let y [fish-eaten] of d
+    let c hsb (i * 360 / n) 50 75  ;; Assign unique color for each dolphin
+    create-temporary-plot-pen (word "dolphin-" [who] of d)
+    set-plot-pen-mode 1  ;; Bar mode
+    set-plot-pen-color c
+
+    ;; Draw the bar incrementally
+    foreach (range 0 y step) [ _y ->
+      plotxy i _y
+    ]
+
+    ;; Add a black marker at the top of the bar
+    set-plot-pen-color black
+    plotxy i y
+    set-plot-pen-color c  ;; Reset pen color for the legend
+  ])
+end
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 464
@@ -512,7 +562,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-1.0
+6.0
 1
 1
 NIL
@@ -645,7 +695,6 @@ false
 PENS
 "Fish Population" 1.0 0 -13345367 true "" "plot count fishes"
 "Total Fish Eaten" 1.0 0 -10899396 true "" "plot total-fish-eaten"
-"plot total-fish-eaten" 1.0 0 -2674135 true "" "plot count dolphins"
 
 SLIDER
 186
@@ -784,7 +833,7 @@ dolphin-communication-range
 dolphin-communication-range
 1
 100
-100.0
+99.0
 1
 1
 NIL
@@ -819,20 +868,48 @@ SWITCH
 435
 cluster-labeling
 cluster-labeling
-1
+0
 1
 -1000
 
 INPUTBOX
-16
-493
-333
-553
+4
+450
+321
+510
 turtle-ids-to-draw-circles
 list 1 2 3
 1
 0
 String (reporter)
+
+PLOT
+1479
+108
+1679
+258
+Dolphins and Fish Eaten
+Dolphins
+Fish Eateb
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" "update-dolphin-fish-plot"
+PENS
+
+SWITCH
+1505
+270
+1663
+303
+color-dolphins
+color-dolphins
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
