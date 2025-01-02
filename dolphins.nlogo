@@ -142,7 +142,7 @@ to perform-fish-behaviors
   ;; TODO fix repeated operation
   if any? dolphins in-radius fish-vision-range [
     let predator min-one-of dolphins in-radius fish-vision-range [distance myself]
-    turn-towards (towards predator - 180) max-separate-turn
+    turn-towards (subtract-headings towards predator 180) max-separate-turn
     fd fish-speed
     stop
     ;show-vision-circle fish-vision-range
