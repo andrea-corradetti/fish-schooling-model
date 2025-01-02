@@ -544,8 +544,8 @@ end
 GRAPHICS-WINDOW
 430
 20
-890
-481
+891
+482
 -1
 -1
 13.73
@@ -569,10 +569,10 @@ ticks
 60.0
 
 SLIDER
-204
-30
-376
-63
+206
+69
+378
+102
 initial-dolphins
 initial-dolphins
 0
@@ -584,10 +584,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-19
-30
-191
-63
+21
+69
+193
+102
 initial-fish
 initial-fish
 0
@@ -599,10 +599,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-18
-74
-192
-107
+20
+113
+194
+146
 fish-vision-range
 fish-vision-range
 0
@@ -614,10 +614,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-206
-74
-408
-107
+208
+113
+410
+146
 dolphin-vision-range
 dolphin-vision-range
 0
@@ -629,10 +629,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-19
-284
-92
-317
+23
+395
+96
+428
 NIL
 setup
 NIL
@@ -646,10 +646,10 @@ NIL
 1
 
 BUTTON
-20
-334
-83
-367
+24
+445
+87
+478
 NIL
 go
 T
@@ -663,10 +663,10 @@ NIL
 0
 
 SLIDER
-20
-120
+22
+159
+194
 192
-153
 fish-speed
 fish-speed
 0
@@ -678,10 +678,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-208
-120
-380
-153
+210
+159
+382
+192
 dolphin-speed
 dolphin-speed
 0
@@ -694,9 +694,9 @@ HORIZONTAL
 
 SLIDER
 928
-134
+130
 1174
-167
+163
 reproduction-interval
 reproduction-interval
 10
@@ -709,9 +709,9 @@ HORIZONTAL
 
 SWITCH
 927
-89
+85
 1103
-122
+118
 enable-reproduction
 enable-reproduction
 1
@@ -719,10 +719,10 @@ enable-reproduction
 -1000
 
 BUTTON
-113
-285
-246
-318
+117
+396
+250
+429
 NIL
 reset-defaults
 NIL
@@ -754,17 +754,17 @@ fish-separation
 fish-separation
 0.1
 10
-0.1
+10.0
 0.1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-18
-168
-245
-201
+20
+207
+247
+240
 fish-max-turn-angle
 fish-max-turn-angle
 45
@@ -908,10 +908,10 @@ color-dolphins
 -1000
 
 BUTTON
-113
-333
-225
-366
+117
+444
+229
+477
 go one tick
 go
 NIL
@@ -926,9 +926,9 @@ NIL
 
 TEXTBOX
 924
-192
+199
 1131
-230
+237
 Fish schooling settings
 16
 0.0
@@ -971,11 +971,21 @@ dolphin-separation
 dolphin-separation
 0
 10
-9.0
+10.0
 1
 1
 NIL
 HORIZONTAL
+
+TEXTBOX
+24
+29
+174
+48
+Setup settings
+16
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
