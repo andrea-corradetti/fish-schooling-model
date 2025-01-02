@@ -16,10 +16,6 @@ circles-own [
   owner
 ]
 
-turtles-own [
-  vision-range  ;; Distance at which agents detect others
-]
-
 fishes-own [
   schoolmates         ;; agentset of nearby fishes
   nearest-neighbor
@@ -65,7 +61,6 @@ to setup
     set shape "fish"
     set default-shape "fish"
     set size 1
-    set vision-range fish-vision-range
     set time-since-reproduction 0
     setxy random-xcor random-ycor
   ]
@@ -75,7 +70,6 @@ to setup
     set color get-color-for who
     set shape "shark"
     set size 1.5
-    set vision-range dolphin-vision-range
     set fish-eaten 0
     set communication-range dolphin-communication-range
     setxy random-xcor random-ycor
@@ -166,14 +160,15 @@ to perform-fish-behaviors
     school
   ]
 
-  ifelse any? dolphins in-radius vision-range [
-    let predator min-one-of dolphins in-radius vision-range [distance myself]
-    ;show-vision-circle
+  ;;TODO fix repeated operation
+  ifelse any? dolphins in-radius fish-vision-range [
+    let predator min-one-of dolphins in-radius fish-vision-range [distance myself]
     flee predator fish-speed
   ] [
     move-randomly-fish
     ;hide-vision-circle
   ]
+
 end
 
 to show-vision-circle
@@ -218,7 +213,7 @@ to school
   find-schoolmates
   if any? schoolmates [
     find-nearest-neighbor
-    ifelse distance nearest-neighbor < minimum-separation [
+    ifelse distance nearest-neighbor < fish-separation [
       separate
     ] [
       align
@@ -228,7 +223,7 @@ to school
 end
 
 to find-schoolmates
-  set schoolmates other fishes in-radius vision-range
+  set schoolmates other fishes in-radius fish-vision-range
 end
 
 to find-nearest-neighbor
@@ -300,7 +295,7 @@ end
 
 
 to perform-dolphin-behaviors
-  set fishes-in-range fishes in-radius vision-range
+  set fishes-in-range fishes in-radius dolphin-vision-range
   if model-version = "hunting" [
     communicate fishes-in-range
     if visible-comm-links [
@@ -321,6 +316,8 @@ to perform-dolphin-behaviors
     if distance target < 1 [ consume-fish target ]
     stop
   ]
+
+
 
   let markers-in-memory fish-markers with [owner = myself]
   if any? markers-in-memory [
@@ -347,7 +344,7 @@ end
 
 to draw-comm-links
   ask my-comm-links [die] ;; TODO change this for performance
-  create-comm-links-with other dolphins in-radius communication-range
+  create-comm-links-with other dolphins in-radius dolphin-communication-range
 end
 
 to communicate [fishes-to-remember]
@@ -372,7 +369,7 @@ end
 to-report invalid-markers-of [dolphin-agent]
   let stale-markers no-turtles
   let markers-in-memory fish-markers with [owner = dolphin-agent]
-  ask markers-in-memory in-radius vision-range [
+  ask markers-in-memory in-radius dolphin-vision-range [
     let actual-fish one-of ([fishes-in-range] of dolphin-agent) with [who = [fish-id] of myself]
     if actual-fish = nobody or distance actual-fish > 1 [
       set stale-markers (turtle-set stale-markers self)
@@ -387,13 +384,12 @@ end
 
 to broadcast-delete [marker]
   if enable-debug [ show (word "broadcast-delete: " marker) ]
-  ask dolphins in-radius communication-range [
+  ask dolphins in-radius dolphin-communication-range [
     let markers-in-memory fish-markers with [owner = myself] who-are-not marker
     let stale-markers markers-in-memory with [is-same-marker self marker]
     ask stale-markers [ die ]
   ]
 end
-
 
 to-report is-same-marker [a b]
   report [fish-id] of a = [fish-id] of b
@@ -404,7 +400,7 @@ end
 
 to broadcast [fish-agent]
   if enable-debug [ show (word "broadcast-add:" fish-agent) ]
-  ask other dolphins in-radius communication-range [
+  ask other dolphins in-radius dolphin-communication-range [
     add-or-update-known-fish fish-agent
   ]
 end
@@ -525,16 +521,15 @@ to update-dolphin-fish-plot
     set-plot-pen-color c  ;; Reset pen color for the legend
   ])
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
-464
-16
-901
-454
+430
+20
+890
+481
 -1
 -1
-13.0
+13.73
 1
 10
 1
@@ -555,44 +550,44 @@ ticks
 60.0
 
 SLIDER
-220
-33
-392
-66
+204
+30
+376
+63
 initial-dolphins
 initial-dolphins
 0
 20
-2.0
+20.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-35
-32
-207
-65
+19
+30
+191
+63
 initial-fish
 initial-fish
 0
-100
-2.0
+500
+152.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-31
-79
-205
-112
+18
+74
+192
+107
 fish-vision-range
 fish-vision-range
 0
-20
+max-vision-range
 5.0
 1
 1
@@ -600,25 +595,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-219
-79
-421
-112
+206
+74
+408
+107
 dolphin-vision-range
 dolphin-vision-range
 0
-100
-10.0
+max-vision-range
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-2
-341
-75
-374
+19
+284
+92
+317
 NIL
 setup
 NIL
@@ -632,10 +627,10 @@ NIL
 1
 
 BUTTON
-2
-296
-65
-329
+20
+334
+83
+367
 NIL
 go
 T
@@ -649,14 +644,14 @@ NIL
 0
 
 SLIDER
-31
-128
-203
-161
+20
+120
+192
+153
 fish-speed
 fish-speed
-0.1
-5
+0
+max-fish-speed
 1.0
 0.5
 1
@@ -664,44 +659,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-219
-128
-391
-161
+208
+120
+380
+153
 dolphin-speed
 dolphin-speed
+0
+max-dolphin-speed
+1.5
 0.1
-5
-1.1
-0.5
 1
 NIL
 HORIZONTAL
 
-PLOT
-1191
-78
-1454
-257
-Population and Fish Eaten
-Time
-Count
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"Fish Population" 1.0 0 -13345367 true "" "plot count fishes"
-"Total Fish Eaten" 1.0 0 -10899396 true "" "plot total-fish-eaten"
-
 SLIDER
-186
-276
-432
-309
+928
+134
+1174
+167
 reproduction-interval
 reproduction-interval
 10
@@ -713,10 +689,10 @@ ticks
 HORIZONTAL
 
 SWITCH
-246
-228
-422
-261
+927
+89
+1103
+122
 enable-reproduction
 enable-reproduction
 1
@@ -724,10 +700,10 @@ enable-reproduction
 -1000
 
 BUTTON
-2
-389
-135
-422
+113
+285
+246
+318
 NIL
 reset-defaults
 NIL
@@ -741,37 +717,37 @@ NIL
 1
 
 CHOOSER
-916
-138
-1082
-183
+927
+24
+1093
+69
 model-version
 model-version
 "base" "schooling" "hunting"
-2
+1
 
 SLIDER
-919
-212
-1127
-245
-minimum-separation
-minimum-separation
+923
+238
+1131
+271
+fish-separation
+fish-separation
 0.1
 10
-3.0
+0.1
 0.1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-26
-223
-223
-256
-max-turn-angle
-max-turn-angle
+18
+168
+245
+201
+fish-max-turn-angle
+fish-max-turn-angle
 45
 360
 175.0
@@ -781,10 +757,10 @@ deg
 HORIZONTAL
 
 SLIDER
-919
-256
-1142
-289
+923
+282
+1146
+315
 max-separate-turn
 max-separate-turn
 1
@@ -796,10 +772,10 @@ deg
 HORIZONTAL
 
 SLIDER
-919
-301
-1109
-334
+923
+327
+1113
+360
 max-align-turn
 max-align-turn
 1
@@ -811,10 +787,10 @@ deg
 HORIZONTAL
 
 SLIDER
-919
-346
-1127
-379
+923
+372
+1131
+405
 max-cohere-turn
 max-cohere-turn
 1
@@ -826,10 +802,10 @@ deg
 HORIZONTAL
 
 SLIDER
-166
-400
-437
-433
+1196
+282
+1467
+315
 dolphin-communication-range
 dolphin-communication-range
 1
@@ -841,10 +817,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-916
-73
-1101
-106
+1197
+328
+1382
+361
 visible-comm-links
 visible-comm-links
 0
@@ -852,32 +828,32 @@ visible-comm-links
 -1000
 
 SWITCH
-924
-26
-1081
-59
+1212
+29
+1369
+62
 enable-debug
 enable-debug
-0
+1
 1
 -1000
 
 SWITCH
-925
-402
-1092
-435
+923
+419
+1090
+452
 cluster-labeling
 cluster-labeling
-0
+1
 1
 -1000
 
 INPUTBOX
-4
-450
-321
-510
+1212
+83
+1529
+143
 turtle-ids-to-draw-circles
 list 1 2 3
 1
@@ -885,10 +861,10 @@ list 1 2 3
 String (reporter)
 
 PLOT
-1479
-108
-1679
-258
+1560
+218
+1839
+368
 Dolphins and Fish Eaten
 Dolphins
 Fish Eateb
@@ -902,10 +878,10 @@ true
 PENS
 
 SWITCH
-1505
-270
-1663
-303
+1562
+384
+1720
+417
 color-dolphins
 color-dolphins
 0
@@ -913,10 +889,10 @@ color-dolphins
 -1000
 
 BUTTON
-1266
-380
-1378
-413
+113
+333
+225
+366
 go one tick
 go
 NIL
@@ -928,6 +904,59 @@ NIL
 NIL
 NIL
 1
+
+TEXTBOX
+924
+192
+1131
+230
+Fish schooling settings
+16
+0.0
+1
+
+TEXTBOX
+1195
+194
+1406
+232
+Dolphin Hunting settings
+16
+0.0
+1
+
+PLOT
+1560
+22
+1838
+201
+Population and Fish Eaten
+Time
+Count
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"Fish Population" 1.0 0 -13345367 true "" "plot count fishes"
+
+SLIDER
+1199
+234
+1392
+267
+dolphin-separation
+dolphin-separation
+0
+10
+9.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
