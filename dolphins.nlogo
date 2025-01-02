@@ -164,31 +164,34 @@ to perform-fish-behaviors
   ifelse any? dolphins in-radius fish-vision-range [
     let predator min-one-of dolphins in-radius fish-vision-range [distance myself]
     flee predator fish-speed
+    ;show-vision-circle fish-vision-range
   ] [
-    move-randomly-fish
     ;hide-vision-circle
+    move-randomly-fish
   ]
 
 end
 
-to show-vision-circle
-  if not any? circles with [(who = [who] of myself)] [
+
+to show-vision-circle [vision-range]
+  if not any? circles with [owner = [who] of myself] [
     hatch-circles 1 [
+      setxy [xcor] of myself [ycor] of myself
       set owner [who] of myself
-      set color green + 2               ;; Lighter green for transparency
+      set color [color] of myself + 2               ;; TODO set trasparency
       set size vision-range * 2         ;; Size scaled to match vision range
       set shape "circle outline"
       set hidden? false
     ]
   ]
-  ask circles with [(who = [who] of myself)] [
-    setxy [xcor] of myself [xcor] of myself      ;; follow with bind xy
+  ask circles with [(owner = [who] of myself)] [
+    setxy [xcor] of myself [ycor] of myself      ;; follow with bind xy
   ]
 end
 
 to hide-vision-circle
   ask circles with [owner = [who] of myself] [
-    set hidden? true
+    die
   ]
 end
 
@@ -334,7 +337,10 @@ end
 
 to consume-fish [prey]
   if enable-debug [ show word "Ate fish " prey ]
-  ask prey [ die ]
+  ask prey [
+    ;hide-vision-circle
+    die
+  ]
   ask chase-links with [end1 = myself] [ die ]  ;; Remove the link to the eaten fish
   set chasing-target nobody
   set fish-eaten fish-eaten + 1
