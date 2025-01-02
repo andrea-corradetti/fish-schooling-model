@@ -301,8 +301,10 @@ to perform-dolphin-behaviors
 
   if model-version = "hunting" [
     communicate fishes-in-range
-    if visible-comm-links [
+    ifelse visible-comm-links [
       draw-comm-links
+    ] [
+      ask my-comm-links [die ]
     ]
   ]
 
