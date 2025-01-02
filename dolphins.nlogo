@@ -451,7 +451,7 @@ end
 to-report clusters
   let cluster-min-count 3
   ifelse count fishes > cluster-min-count
-  [ report dbscan:cluster-by-location fishes cluster-min-count (vision-range / 2) ]
+  [ report sort-by [[a b] -> length a <= length b] dbscan:cluster-by-location fishes cluster-min-count (fish-separation + fish-vision-range / 3) ]
   [ report [] ]
 end
 
@@ -478,6 +478,18 @@ to-report version
   )
 end
 
+to-report max-dolphin-speed
+  report (min list max-pxcor max-pycor) / 2
+end
+
+to-report max-fish-speed
+  report (min list max-pxcor max-pycor) / 2
+end
+
+to-report max-vision-range
+  report max list max-pxcor max-pycor
+end
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; PLOTTING
@@ -487,7 +499,7 @@ to-report get-color-for [id]
   let dolphins-list sort [who] of dolphins
   let i position id dolphins-list
   let c approximate-hsb (i * 360 / initial-dolphins) 75 85  ;; Unique hue for each dolphin
-  ifelse c = false
+  ifelse c = false or not color-dolphins
   [ report red ] ;; fallback value
   [ report c ]
  end
