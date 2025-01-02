@@ -232,6 +232,27 @@ to align
 end
 
 
+;;; MOVEMENT
+
+to turn-towards [new-heading max-turn]
+  turn-at-most (subtract-headings new-heading heading) max-turn
+end
+
+to turn-away [new-heading max-turn]
+  turn-at-most (subtract-headings heading new-heading) max-turn
+end
+
+;; turn right by "turn" degrees (or left if "turn" is negative),
+;; but never turn more than "max-turn" degrees
+to turn-at-most [turn max-turn]
+  ifelse abs turn > max-turn
+    [ ifelse turn > 0
+        [ rt max-turn ]
+        [ lt max-turn ] ]
+    [ rt turn ]
+end
+
+
 
 to-report average-schoolmate-heading
   ;; We can't just average the heading variables here.
@@ -261,25 +282,7 @@ to-report average-heading-towards-schoolmates
     [ report atan x-component y-component ]
 end
 
-;;; MOVEMENT
 
-to turn-towards [new-heading max-turn]
-  turn-at-most (subtract-headings new-heading heading) max-turn
-end
-
-to turn-away [new-heading max-turn]
-  turn-at-most (subtract-headings heading new-heading) max-turn
-end
-
-;; turn right by "turn" degrees (or left if "turn" is negative),
-;; but never turn more than "max-turn" degrees
-to turn-at-most [turn max-turn]
-  ifelse abs turn > max-turn
-    [ ifelse turn > 0
-        [ rt max-turn ]
-        [ lt max-turn ] ]
-    [ rt turn ]
-end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,10 +300,14 @@ to perform-dolphin-behaviors
   ]
 
   let target min-one-of fishes-in-range [distance myself]
-
   if target != chasing-target [
     ask chase-links with [end1 = myself] [ die ] ;; Delete link because outdated
     set chasing-target target
+  ]
+
+  set nearest-neighbor min-one-of other dolphins [distance myself]
+  if distance nearest-neighbor < dolphin-separation [
+      separate nearest-neighbor
   ]
 
   if target != nobody [
@@ -310,12 +317,6 @@ to perform-dolphin-behaviors
     if distance target < 1 [ consume-fish target ]
     stop
   ]
-
-  set nearest-neighbor min-one-of dolphins [distance myself]
-  if distance nearest-neighbor < dolphin-separation [
-    separate nearest-neighbor
-  ]
-
 
   let markers-in-memory fish-markers with [owner = myself]
   if any? markers-in-memory [
@@ -565,8 +566,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-1
-1
+0
+0
 1
 ticks
 60.0
@@ -580,7 +581,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-20.0
+10.0
 1
 1
 NIL
@@ -595,7 +596,7 @@ initial-fish
 initial-fish
 0
 500
-277.0
+182.0
 1
 1
 NIL
@@ -625,7 +626,7 @@ dolphin-vision-range
 dolphin-vision-range
 0
 max-vision-range
-5.0
+16.0
 1
 1
 NIL
@@ -689,7 +690,7 @@ dolphin-speed
 dolphin-speed
 0
 max-dolphin-speed
-1.5
+1.0
 0.1
 1
 NIL
@@ -968,14 +969,14 @@ PENS
 SLIDER
 1199
 234
-1392
+1396
 267
 dolphin-separation
 dolphin-separation
 0
 10
-5.0
-1
+3.5
+0.1
 1
 NIL
 HORIZONTAL
