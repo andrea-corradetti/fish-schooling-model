@@ -26,6 +26,7 @@ fishes-own [
 ]
 
 dolphins-own [
+  nearest-neighbor
   fish-eaten
   chasing-target
   communication-range
@@ -97,14 +98,14 @@ end
 
 ;; Button procedure
 to go
-  if not any? fishes [ stop ]  ;; End simulation if no fishes remain
+  if not any? fishes [ stop ]
 
   ask fishes [
     perform-fish-behaviors
     set time-alive time-alive + 1
   ]
 
-delete-labels
+  delete-labels
   ask one-of fishes [
     ifelse cluster-labeling
     [ label-clusters ]
@@ -123,32 +124,11 @@ end
 ;; MOVEMENT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to move-randomly [turn-angle speed]
-  ;; Perform random movement within a specified turn angle
-  let random-turn (random-float turn-angle - turn-angle / 2)
-  rt random-turn
-  fd speed
-end
-
-to flee [predator speed]
-  ;; Flee from a predator
-  face predator
-  rt 180
-  fd speed
-end
-
-to move-towards [target speed]
-  face target
-  let distance-to-target distance target
-  let adjusted-speed min (list speed distance-to-target)  ;; clamp to avoid overshooting
-  fd adjusted-speed
-end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FISH BEHAVIORS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 to perform-fish-behaviors
   set time-since-reproduction time-since-reproduction + 1
@@ -157,20 +137,25 @@ to perform-fish-behaviors
     set time-since-reproduction 0  ;; Reset timer
   ]
 
+  ;; FIXME need a way to weigh fleeing behavior
+
+  ;; TODO fix repeated operation
+  if any? dolphins in-radius fish-vision-range [
+    let predator min-one-of dolphins in-radius fish-vision-range [distance myself]
+    turn-towards (towards predator - 180) max-separate-turn
+    fd fish-speed
+    stop
+    ;show-vision-circle fish-vision-range
+  ]
+
   if version >= 1 [
     school
+    fd fish-speed
+    stop
   ]
 
-  ;;TODO fix repeated operation
-  ifelse any? dolphins in-radius fish-vision-range [
-    let predator min-one-of dolphins in-radius fish-vision-range [distance myself]
-    flee predator fish-speed
-    ;show-vision-circle fish-vision-range
-  ] [
-    ;hide-vision-circle
-    move-randomly-fish
-  ]
-
+  roam max-fish-roam-turn
+  fd fish-speed
 end
 
 
@@ -206,9 +191,6 @@ to reproduce
   ]
 end
 
-to move-randomly-fish
-  move-randomly 180 fish-speed
-end
 
 
 ;;; SCHOOLING (reproduced from flocking model included with NetLogo)
@@ -218,12 +200,17 @@ to school
   if any? schoolmates [
     find-nearest-neighbor
     ifelse distance nearest-neighbor < fish-separation [
-      separate
+      separate nearest-neighbor
     ] [
       align
       cohere
     ]
   ]
+end
+
+to roam [turn-angle]
+  let random-turn (random-float turn-angle - turn-angle / 2)
+  turn-towards random-turn max-fish-roam-turn
 end
 
 to find-schoolmates
@@ -234,8 +221,8 @@ to find-nearest-neighbor
   set nearest-neighbor min-one-of schoolmates [distance myself]
 end
 
-to separate
-    turn-away ([heading] of nearest-neighbor) max-separate-turn
+to separate [neighbor]
+  turn-away ([heading] of neighbor) max-separate-turn
 end
 
 ;;; ALIGN
@@ -243,6 +230,8 @@ end
 to align
   turn-towards average-schoolmate-heading max-align-turn
 end
+
+
 
 to-report average-schoolmate-heading
   ;; We can't just average the heading variables here.
@@ -272,7 +261,7 @@ to-report average-heading-towards-schoolmates
     [ report atan x-component y-component ]
 end
 
-;;; HELPER PROCEDURES
+;;; MOVEMENT
 
 to turn-towards [new-heading max-turn]
   turn-at-most (subtract-headings new-heading heading) max-turn
@@ -316,11 +305,16 @@ to perform-dolphin-behaviors
 
   if target != nobody [
     create-chase-link-to target ;; Draw link from dolphin to target
-    move-towards target dolphin-speed
+    turn-towards towards target max-dolphin-turn
+    move-at-most target dolphin-speed
     if distance target < 1 [ consume-fish target ]
     stop
   ]
 
+  set nearest-neighbor min-one-of dolphins [distance myself]
+  if distance nearest-neighbor < dolphin-separation [
+    separate nearest-neighbor
+  ]
 
 
   let markers-in-memory fish-markers with [owner = myself]
@@ -328,11 +322,20 @@ to perform-dolphin-behaviors
     let closest-fish min-one-of markers-in-memory [distance myself]
     set chasing-target closest-fish
     create-chase-link-to closest-fish
-    move-towards closest-fish dolphin-speed
+    turn-towards towards target max-dolphin-turn
+    move-at-most closest-fish dolphin-speed
     stop
   ]
 
-  move-randomly 180 dolphin-speed
+  roam max-dolphin-turn
+  fd dolphin-speed
+
+end
+
+to move-at-most [target speed]
+  let distance-to-target distance target
+  let adjusted-speed min (list speed distance-to-target)  ;; clamp to avoid overshooting
+  fd adjusted-speed
 end
 
 
@@ -592,7 +595,7 @@ initial-fish
 initial-fish
 0
 500
-152.0
+277.0
 1
 1
 NIL
@@ -754,7 +757,7 @@ fish-separation
 fish-separation
 0.1
 10
-10.0
+0.1
 0.1
 1
 NIL
@@ -763,14 +766,14 @@ HORIZONTAL
 SLIDER
 20
 207
-247
+254
 240
-fish-max-turn-angle
-fish-max-turn-angle
-45
+max-fish-roam-turn
+max-fish-roam-turn
+15
 360
 175.0
-1
+5
 1
 deg
 HORIZONTAL
@@ -864,7 +867,7 @@ SWITCH
 452
 cluster-labeling
 cluster-labeling
-1
+0
 1
 -1000
 
@@ -971,7 +974,7 @@ dolphin-separation
 dolphin-separation
 0
 10
-10.0
+5.0
 1
 1
 NIL
@@ -986,6 +989,21 @@ Setup settings
 16
 0.0
 1
+
+SLIDER
+19
+253
+229
+286
+max-dolphin-turn
+max-dolphin-turn
+45
+260
+50.0
+5
+1
+deg
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
