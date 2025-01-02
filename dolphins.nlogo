@@ -87,7 +87,7 @@ to reset-defaults
   set initial-dolphins 5
   set fish-vision-range 5
   set dolphin-vision-range 5
-  if enable-reproduction [set enable-reproduction false]
+  set enable-reproduction false
 end
 
 
@@ -153,6 +153,7 @@ to perform-fish-behaviors
     fd fish-speed
     stop
   ]
+
 
   roam max-fish-roam-turn
   fd fish-speed
@@ -292,6 +293,12 @@ end
 
 to perform-dolphin-behaviors
   set fishes-in-range fishes in-radius dolphin-vision-range
+  let target min-one-of fishes-in-range [distance myself]
+  if target != chasing-target [
+    ask chase-links with [end1 = myself] [ die ] ;; Delete link because outdated
+    set chasing-target target
+  ]
+
   if model-version = "hunting" [
     communicate fishes-in-range
     if visible-comm-links [
@@ -299,15 +306,15 @@ to perform-dolphin-behaviors
     ]
   ]
 
-  let target min-one-of fishes-in-range [distance myself]
-  if target != chasing-target [
-    ask chase-links with [end1 = myself] [ die ] ;; Delete link because outdated
-    set chasing-target target
-  ]
-
   set nearest-neighbor min-one-of other dolphins [distance myself]
   if distance nearest-neighbor < dolphin-separation [
-      separate nearest-neighbor
+    separate nearest-neighbor
+
+    if heading = [heading] of nearest-neighbor [
+      turn-towards (subtract-headings towards nearest-neighbor 180) max-dolphin-turn
+      fd dolphin-speed
+      stop
+    ]
   ]
 
   if target != nobody [
@@ -566,8 +573,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 60.0
@@ -581,7 +588,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-10.0
+5.0
 1
 1
 NIL
@@ -868,7 +875,7 @@ SWITCH
 452
 cluster-labeling
 cluster-labeling
-0
+1
 1
 -1000
 
@@ -975,7 +982,7 @@ dolphin-separation
 dolphin-separation
 0
 10
-3.5
+10.0
 0.1
 1
 NIL
