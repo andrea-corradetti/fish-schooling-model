@@ -104,6 +104,7 @@ to go
     set time-alive time-alive + 1
   ]
 
+delete-labels
   ask one-of fishes [
     ifelse cluster-labeling
     [ label-clusters ]
