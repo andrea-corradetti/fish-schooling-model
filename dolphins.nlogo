@@ -47,6 +47,8 @@ globals [
   default-dolphin-count
   default-vision-range
   old-cluster-labeling
+  old-color-clusters
+  old-mean-fish-lifespan
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -55,25 +57,13 @@ globals [
 
 to setup
   clear-all
+  set old-cluster-labeling cluster-labeling
+  set old-color-clusters color-clusters
 
   ifelse input-seed != 0
   [set starting-seed input-seed]
   [set starting-seed new-seed]
-
-
   random-seed starting-seed
-
-  set old-cluster-labeling false
-
-
-  create-fishes initial-fish [
-    set color blue
-    set shape "fish"
-    set default-shape "fish"
-    set size 1
-    set time-since-reproduction 0
-    setxy random-xcor random-ycor
-  ]
 
   create-dolphins initial-dolphins [
     if enable-debug [show word "Created with color " get-color-for who]
@@ -84,6 +74,18 @@ to setup
     set communication-range dolphin-communication-range
     setxy random-xcor random-ycor
   ]
+
+  create-fishes initial-fish [
+    set color blue
+    set shape "fish"
+    set default-shape "fish"
+    set size 1
+    set time-since-reproduction 0
+    setxy random-xcor random-ycor
+  ]
+
+  if color-clusters [ color-fishes-by-cluster ]
+  if cluster-labeling [ update-cluster-labels ]
 
   reset-ticks
 end
@@ -105,6 +107,10 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+to set-fish-color-to-default
+  ask fishes [set color blue]
+end
+
 ;; Button procedure
 to go
   if not any? fishes [ stop ]
@@ -114,20 +120,44 @@ to go
     set time-alive time-alive + 1
   ]
 
-  delete-labels
-  ask one-of fishes [
-    ifelse cluster-labeling
-    [ label-clusters ]
-    [ if labeling-was-turned-off [ delete-labels ] ]
-  ]
 
   ask dolphins [
     perform-dolphin-behaviors
   ]
 
-  set old-cluster-labeling not not cluster-labeling
+  if color-clusters [ color-fishes-by-cluster ]
+  if color-clusters-was-turned-off [ set-fish-color-to-default ]
+
+  if cluster-labeling [ update-cluster-labels ]
+  if cluster-labeling-was-turned-off [ delete-labels ]
+
+  set old-cluster-labeling cluster-labeling
+  set old-color-clusters color-clusters
+
   tick
 end
+
+
+to color-fishes-by-cluster
+  let cluster-list clusters
+
+  (foreach cluster-list range length cluster-list [ [cluster i] ->
+    let cluster-color get-cluster-color i
+
+    foreach cluster [ f ->
+      ask f [set color cluster-color]
+    ]
+  ])
+end
+
+
+to update-cluster-labels
+  delete-labels
+  ask one-of fishes [
+     label-clusters
+  ]
+end
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; MOVEMENT
@@ -139,14 +169,14 @@ end
 ;; FISH BEHAVIORS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+
 to perform-fish-behaviors
   set time-since-reproduction time-since-reproduction + 1
   if enable-reproduction and time-since-reproduction > reproduction-interval [
     reproduce
     set time-since-reproduction 0  ;; Reset timer
   ]
-
-  ;; FIXME need a way to weigh fleeing behavior
 
   ;; TODO fix repeated operation
   if any? dolphins in-radius fish-vision-range [
@@ -499,6 +529,13 @@ to-report max-fish-lifespan
   report max [time-alive] of fishes
 end
 
+to-report mean-fish-lifespan
+  if count fishes = 0 [ report old-mean-fish-lifespan ]
+  let value mean sort [time-alive] of fishes
+  set old-mean-fish-lifespan value
+  report value
+end
+
 to-report clusters
   let cluster-min-count 3
   ifelse count fishes > cluster-min-count
@@ -517,7 +554,7 @@ to delete-labels
   ask fishes [set label ""]
 end
 
-to-report labeling-was-turned-off
+to-report cluster-labeling-was-turned-off
   report (not cluster-labeling) and old-cluster-labeling
 end
 
@@ -546,6 +583,11 @@ end
 ;; PLOTTING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+to-report color-clusters-was-turned-off
+  report not color-clusters and old-color-clusters
+end
+
 to-report get-color-for [id]
   let dolphins-list sort [who] of dolphins
   let i position id dolphins-list
@@ -570,6 +612,45 @@ to update-dolphin-fish-plot
     let y [fish-eaten] of d
     let c approximate-hsb (i * 360 / n) 50 75  ;; Assign unique color for each dolphin
     create-temporary-plot-pen (word "dolphin-" [who] of d)
+    set-plot-pen-mode 1  ;; Bar mode
+    set-plot-pen-color c
+
+    ;; Draw the bar incrementally
+    foreach (range 0 y step) [ _y ->
+      plotxy i _y
+    ]
+
+    ;; Add a black marker at the top of the bar
+    set-plot-pen-color black
+    plotxy i y
+    set-plot-pen-color c  ;; Reset pen color for the legend
+  ])
+end
+
+to-report get-cluster-color [index]
+  let palette [red green blue orange cyan magenta violet yellow brown pink]
+  report item (index mod length palette) palette  ;; Cycle through the palette
+end
+
+
+to update-cluster-fish-plot
+  set-current-plot "Fishes in Clusters"
+  clear-plot
+
+  ;; Get the list of clusters (sorted by size)
+  let cluster-list clusters
+
+  ;; Calculate the number of clusters and set the X-axis range
+  let n length cluster-list
+  set-plot-x-range 0 n
+
+  let step 0.05  ;; Tweak for smooth bar stacking
+
+  ;; Iterate over clusters and plot their sizes
+  (foreach cluster-list range n [ [cluster i] ->
+    let y length cluster  ;; Number of fishes in this cluster
+    let c approximate-hsb (i * 360 / n) 50 75  ;; Assign unique color for each cluster
+    create-temporary-plot-pen (word "cluster-" i)
     set-plot-pen-mode 1  ;; Bar mode
     set-plot-pen-color c
 
@@ -636,7 +717,7 @@ initial-fish
 initial-fish
 0
 500
-226.0
+350.0
 1
 1
 NIL
@@ -743,10 +824,10 @@ SLIDER
 163
 reproduction-interval
 reproduction-interval
+50
+150
+80.0
 10
-120
-55.0
-1
 1
 ticks
 HORIZONTAL
@@ -908,26 +989,15 @@ SWITCH
 452
 cluster-labeling
 cluster-labeling
-0
+1
 1
 -1000
 
-INPUTBOX
-1212
-83
-1529
-143
-turtle-ids-to-draw-circles
-list 1 2 3
-1
-0
-String (reporter)
-
 PLOT
-1560
-218
-1839
-368
+1568
+404
+1847
+554
 Dolphins and Fish Eaten
 Dolphins
 Fish Eateb
@@ -941,10 +1011,10 @@ true
 PENS
 
 SWITCH
-1562
-384
-1720
-417
+1213
+74
+1371
+107
 color-dolphins
 color-dolphins
 0
@@ -1094,14 +1164,64 @@ Set input-seed to 0 to generate a random seed
 1
 
 TEXTBOX
-1208
-428
-1358
-446
+1211
+436
+1361
+454
 set to 0 to disable
-12
+11
 0.0
 1
+
+MONITOR
+1569
+565
+1718
+614
+NIL
+average-fish-eaten
+2
+1
+12
+
+MONITOR
+1572
+634
+1716
+683
+NIL
+mean-fish-lifespan
+2
+1
+12
+
+PLOT
+1560
+217
+1840
+387
+Fishes in Clusters
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" "update-cluster-fish-plot"
+PENS
+
+SWITCH
+1215
+123
+1370
+156
+color-clusters
+color-clusters
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
