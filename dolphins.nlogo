@@ -528,7 +528,7 @@ to-report total-fish-eaten
   report sum [fish-eaten] of dolphins
 end
 
-to-report average-fish-eaten
+to-report mean-fish-eaten
   if count dolphins = 0 [ report 0 ]
   report mean [fish-eaten] of dolphins
 end
@@ -585,6 +585,46 @@ end
 to-report max-vision-range
   report max list max-pxcor max-pycor
 end
+
+to-report variance-fish-eaten
+  let fish-eaten-list [fish-eaten] of dolphins
+  if empty? fish-eaten-list [ report 0 ]
+  let mean-value mean fish-eaten-list
+  let squared-differences map [ diff -> ( diff - mean-value ) ^ 2 ] fish-eaten-list
+  report mean squared-differences
+end
+
+to-report stddev-fish-eaten
+  let variance-value variance-fish-eaten
+  report sqrt variance-value
+end
+
+
+to-report cv-fish-eaten
+  report (stddev-fish-eaten / mean-fish-eaten) * 100
+end
+
+
+to-report average-dolphin-distance
+  let total-distance 0
+  let num-pairs 0
+
+  ;; Loop over all pairs of dolphins
+  ask dolphins [
+    let me-self self  ;; Store the current dolphin
+    ask other dolphins [  ;; Compare with other dolphins
+      set total-distance total-distance + distance me-self
+      set num-pairs num-pairs + 1
+    ]
+  ]
+
+  ;; Avoid division by zero
+  if num-pairs = 0 [ report 0 ]
+
+  ;; Calculate and report the average distance
+  report total-distance / num-pairs
+end
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -695,8 +735,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 60.0
@@ -710,7 +750,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-2.0
+5.0
 1
 1
 NIL
@@ -724,9 +764,9 @@ SLIDER
 initial-fish
 initial-fish
 0
-500
+1000
 150.0
-250
+10
 1
 NIL
 HORIZONTAL
@@ -755,17 +795,17 @@ dolphin-vision-range
 dolphin-vision-range
 0
 max-vision-range
-5.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-21
-459
-94
-492
+18
+595
+91
+628
 NIL
 setup
 NIL
@@ -779,10 +819,10 @@ NIL
 1
 
 BUTTON
-22
-509
-85
-542
+19
+645
+82
+678
 NIL
 go
 T
@@ -819,7 +859,7 @@ dolphin-speed
 dolphin-speed
 0
 max-dolphin-speed
-1.5
+1.0
 0.1
 1
 NIL
@@ -834,7 +874,7 @@ reproduction-interval
 reproduction-interval
 50
 150
-80.0
+90.0
 10
 1
 ticks
@@ -852,10 +892,10 @@ enable-reproduction
 -1000
 
 BUTTON
-115
-460
-248
-493
+112
+596
+245
+629
 NIL
 reset-defaults
 NIL
@@ -876,7 +916,7 @@ CHOOSER
 model-version
 model-version
 "base" "schooling" "hunting"
-2
+0
 
 SLIDER
 923
@@ -887,7 +927,7 @@ fish-separation
 fish-separation
 0.1
 10
-1.3
+3.0
 0.1
 1
 NIL
@@ -898,11 +938,11 @@ SLIDER
 207
 254
 240
-max-fish-roam-turn
-max-fish-roam-turn
+max-fish-turn
+max-fish-turn
 15
 360
-175.0
+180.0
 5
 1
 deg
@@ -917,7 +957,7 @@ max-separate-turn
 max-separate-turn
 1
 360
-75.0
+76.0
 1
 1
 deg
@@ -1030,10 +1070,10 @@ color-dolphins
 -1000
 
 BUTTON
-115
-508
-227
-541
+112
+644
+224
+677
 go one tick
 go
 NIL
@@ -1110,25 +1150,25 @@ Setup settings
 1
 
 SLIDER
-19
-253
-229
-286
+20
+251
+230
+284
 max-dolphin-turn
 max-dolphin-turn
 45
-260
-70.0
+360
+180.0
 5
 1
 deg
 HORIZONTAL
 
 MONITOR
-203
-349
-313
-398
+200
+485
+310
+534
 NIL
 starting-seed
 0
@@ -1136,12 +1176,12 @@ starting-seed
 12
 
 INPUTBOX
-20
-349
-181
-409
+17
+485
+178
+545
 input-seed
-10.0
+0.0
 1
 0
 Number
@@ -1155,17 +1195,17 @@ dolphin-memory-size
 dolphin-memory-size
 1
 25
-4.0
+5.0
 1
 1
 markers
 HORIZONTAL
 
 TEXTBOX
-23
-321
-355
-366
+20
+457
+352
+502
 Set input-seed to 0 to generate a random seed
 12
 0.0
@@ -1182,10 +1222,10 @@ set to 0 to disable
 1
 
 MONITOR
-1569
-576
-1713
-625
+1405
+42
+1549
+91
 NIL
 mean-fish-lifespan
 2
@@ -1216,9 +1256,71 @@ SWITCH
 612
 color-clusters
 color-clusters
-0
+1
 1
 -1000
+
+MONITOR
+1567
+581
+1736
+630
+NIL
+variance-fish-eaten
+2
+1
+12
+
+MONITOR
+1566
+648
+1722
+697
+NIL
+stddev-fish-eaten
+2
+1
+12
+
+MONITOR
+1569
+709
+1674
+758
+NIL
+cv-fish-eaten
+2
+1
+12
+
+MONITOR
+1358
+543
+1554
+592
+NIL
+average-dolphin-distance
+2
+1
+12
+
+PLOT
+1350
+611
+1550
+761
+Average dolphin distance
+Time
+Distance
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"Distance" 1.0 0 -16777216 true "" "plot average-dolphin-distance"
 
 @#$#@#$#@
 ## WHAT IS IT?
