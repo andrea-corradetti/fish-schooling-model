@@ -94,11 +94,16 @@ end
 to reset-defaults
   set fish-speed 1
   set dolphin-speed 1.5
-  set initial-fish 50
+  set initial-fish 150
   set initial-dolphins 5
   set fish-vision-range 5
   set dolphin-vision-range 5
   set enable-reproduction false
+  set dolphin-memory-size 5
+  set dolphin-communication-range 5
+  set dolphin-separation 0
+  set fish-separation 3.0
+
 end
 
 
@@ -687,8 +692,8 @@ GRAPHICS-WINDOW
 16
 -16
 16
-1
-1
+0
+0
 1
 ticks
 60.0
@@ -702,7 +707,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-5.0
+2.0
 1
 1
 NIL
@@ -717,8 +722,8 @@ initial-fish
 initial-fish
 0
 500
-350.0
-1
+150.0
+250
 1
 NIL
 HORIZONTAL
@@ -818,10 +823,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-928
-130
-1174
-163
+925
+134
+1171
+167
 reproduction-interval
 reproduction-interval
 50
@@ -879,7 +884,7 @@ fish-separation
 fish-separation
 0.1
 10
-0.2
+1.3
 0.1
 1
 NIL
@@ -909,7 +914,7 @@ max-separate-turn
 max-separate-turn
 1
 360
-268.0
+75.0
 1
 1
 deg
@@ -924,7 +929,7 @@ max-align-turn
 max-align-turn
 1
 360
-145.0
+344.0
 1
 1
 deg
@@ -954,17 +959,17 @@ dolphin-communication-range
 dolphin-communication-range
 1
 max-pxcor
-16.0
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 SWITCH
-1198
-285
-1383
-318
+921
+529
+1106
+562
 visible-comm-links
 visible-comm-links
 0
@@ -972,10 +977,10 @@ visible-comm-links
 -1000
 
 SWITCH
-1212
-29
-1369
-62
+1186
+26
+1343
+59
 enable-debug
 enable-debug
 1
@@ -983,10 +988,10 @@ enable-debug
 -1000
 
 SWITCH
-923
-419
-1090
-452
+1121
+530
+1288
+563
 cluster-labeling
 cluster-labeling
 1
@@ -1011,10 +1016,10 @@ true
 PENS
 
 SWITCH
-1213
-74
-1371
-107
+920
+578
+1078
+611
 color-dolphins
 color-dolphins
 0
@@ -1049,10 +1054,10 @@ Fish schooling settings
 1
 
 TEXTBOX
-1195
-194
-1406
-232
+1201
+206
+1412
+244
 Dolphin Hunting settings
 16
 0.0
@@ -1077,15 +1082,15 @@ PENS
 "Fish Population" 1.0 0 -13345367 true "" "plot count fishes"
 
 SLIDER
-1198
-395
-1395
-428
+1196
+337
+1393
+370
 dolphin-separation
 dolphin-separation
 0
 10
-9.6
+0.0
 0.1
 1
 NIL
@@ -1110,7 +1115,7 @@ max-dolphin-turn
 max-dolphin-turn
 45
 260
-50.0
+70.0
 5
 1
 deg
@@ -1139,15 +1144,15 @@ input-seed
 Number
 
 SLIDER
-1198
-337
-1454
-370
+1197
+286
+1453
+319
 dolphin-memory-size
 dolphin-memory-size
 1
 25
-5.0
+4.0
 1
 1
 markers
@@ -1164,10 +1169,10 @@ Set input-seed to 0 to generate a random seed
 1
 
 TEXTBOX
-1211
-436
-1361
-454
+1209
+378
+1359
+396
 set to 0 to disable
 11
 0.0
@@ -1175,20 +1180,9 @@ set to 0 to disable
 
 MONITOR
 1569
-565
-1718
-614
-NIL
-average-fish-eaten
-2
-1
-12
-
-MONITOR
-1572
-634
-1716
-683
+576
+1713
+625
 NIL
 mean-fish-lifespan
 2
@@ -1213,13 +1207,13 @@ true
 PENS
 
 SWITCH
-1215
-123
-1370
-156
+1118
+579
+1273
+612
 color-clusters
 color-clusters
-1
+0
 1
 -1000
 
