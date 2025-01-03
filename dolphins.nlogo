@@ -73,6 +73,7 @@ to setup
     set fish-eaten 0
     set communication-range dolphin-communication-range
     setxy random-xcor random-ycor
+    rt random 360
   ]
 
   create-fishes initial-fish [
@@ -82,6 +83,7 @@ to setup
     set size 1
     set time-since-reproduction 0
     setxy random-xcor random-ycor
+    rt random 360
   ]
 
   if color-clusters [ color-fishes-by-cluster ]
@@ -103,6 +105,8 @@ to reset-defaults
   set dolphin-communication-range 5
   set dolphin-separation 0
   set fish-separation 3.0
+  set max-fish-turn 180
+  set max-dolphin-turn 180
 
 end
 
@@ -186,10 +190,9 @@ to perform-fish-behaviors
   ;; TODO fix repeated operation
   if any? dolphins in-radius fish-vision-range [
     let predator min-one-of dolphins in-radius fish-vision-range [distance myself]
-    turn-towards (subtract-headings towards predator 180) max-separate-turn
+    turn-towards (subtract-headings towards predator 180) max-fish-turn
     fd fish-speed
     stop
-    ;show-vision-circle fish-vision-range
   ]
 
   if version >= 1 [
@@ -199,7 +202,7 @@ to perform-fish-behaviors
   ]
 
 
-  roam max-fish-roam-turn
+  roam max-fish-turn
   fd fish-speed
 end
 
@@ -257,7 +260,7 @@ end
 
 to roam [turn-angle]
   let random-turn (random-float turn-angle - turn-angle / 2)
-  turn-towards random-turn max-fish-roam-turn
+  turn-at-most random-turn turn-angle
 end
 
 to find-schoolmates
@@ -357,7 +360,7 @@ to perform-dolphin-behaviors
   ]
 
   set nearest-neighbor min-one-of other dolphins [distance myself]
-  if distance nearest-neighbor < dolphin-separation [
+  if nearest-neighbor != nobody and distance nearest-neighbor < dolphin-separation [
     separate nearest-neighbor
 
     if heading = [heading] of nearest-neighbor [
