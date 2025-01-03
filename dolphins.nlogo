@@ -40,6 +40,7 @@ fish-markers-own [
 ]
 
 globals [
+  starting-seed
   default-fish-speed
   default-dolphin-speed
   default-fish-count
@@ -54,6 +55,14 @@ globals [
 
 to setup
   clear-all
+
+  ifelse input-seed != 0
+  [set starting-seed input-seed]
+  [set starting-seed new-seed]
+
+
+  random-seed starting-seed
+
   set old-cluster-labeling false
 
 
@@ -158,6 +167,8 @@ to perform-fish-behaviors
   roam max-fish-roam-turn
   fd fish-speed
 end
+
+
 
 
 to show-vision-circle [vision-range]
@@ -293,14 +304,16 @@ end
 
 to perform-dolphin-behaviors
   set fishes-in-range fishes in-radius dolphin-vision-range
+  let fishes-to-remember take dolphin-memory-size (sort-on [distance myself] fishes-in-range)
   let target min-one-of fishes-in-range [distance myself]
+
   if target != chasing-target [
     ask chase-links with [end1 = myself] [ die ] ;; Delete link because outdated
     set chasing-target target
   ]
 
   if model-version = "hunting" [
-    communicate fishes-in-range
+    communicate fishes-to-remember
     ifelse visible-comm-links [
       draw-comm-links
     ] [
@@ -327,12 +340,14 @@ to perform-dolphin-behaviors
     stop
   ]
 
+  ;; Markers are hatched only if model-version is "hunting"
+  ;; Find closest marker and chase it
   let markers-in-memory fish-markers with [owner = myself]
   if any? markers-in-memory [
     let closest-fish min-one-of markers-in-memory [distance myself]
     set chasing-target closest-fish
     create-chase-link-to closest-fish
-    turn-towards towards target max-dolphin-turn
+    turn-towards towards chasing-target max-dolphin-turn
     move-at-most closest-fish dolphin-speed
     stop
   ]
@@ -340,6 +355,11 @@ to perform-dolphin-behaviors
   roam max-dolphin-turn
   fd dolphin-speed
 
+end
+
+
+to-report take [n xs]
+  report sublist xs 0 min list n (length xs)
 end
 
 to move-at-most [target speed]
@@ -369,7 +389,7 @@ end
 
 to communicate [fishes-to-remember]
   if enable-debug [ show (word "--- begin communicate ---") ]
-  foreach [self] of fishes-to-remember [ f ->
+  foreach fishes-to-remember [ f ->
     add-or-update-known-fish f
     broadcast f
   ]
@@ -380,10 +400,21 @@ to communicate [fishes-to-remember]
   ]
 
   let markers-in-memory fish-markers with [owner = myself]
+  retain-markers dolphin-memory-size markers-in-memory
+
   if enable-debug [
     show word "markers: " [self] of markers-in-memory
     show (word "--- end communicate ---")
   ]
+end
+
+
+to retain-markers [n markers-in-memory]
+  let markers-to-retain take n (sort-on [distance myself] markers-in-memory)
+  let markers-to-forget markers-in-memory with [not member? self markers-to-retain]
+  if enable-debug [ show word "Forgetting " markers-to-forget ]
+
+  ask markers-to-forget [die]
 end
 
 to-report invalid-markers-of [dolphin-agent]
@@ -605,7 +636,7 @@ initial-fish
 initial-fish
 0
 500
-182.0
+226.0
 1
 1
 NIL
@@ -635,17 +666,17 @@ dolphin-vision-range
 dolphin-vision-range
 0
 max-vision-range
-16.0
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-23
-395
-96
-428
+21
+459
+94
+492
 NIL
 setup
 NIL
@@ -653,16 +684,16 @@ NIL
 T
 OBSERVER
 NIL
-NIL
+S
 NIL
 NIL
 1
 
 BUTTON
-24
-445
-87
-478
+22
+509
+85
+542
 NIL
 go
 T
@@ -670,7 +701,7 @@ T
 T
 OBSERVER
 NIL
-NIL
+G
 NIL
 NIL
 0
@@ -699,7 +730,7 @@ dolphin-speed
 dolphin-speed
 0
 max-dolphin-speed
-1.0
+1.5
 0.1
 1
 NIL
@@ -714,7 +745,7 @@ reproduction-interval
 reproduction-interval
 10
 120
-10.0
+55.0
 1
 1
 ticks
@@ -732,10 +763,10 @@ enable-reproduction
 -1000
 
 BUTTON
-117
-396
-250
-429
+115
+460
+248
+493
 NIL
 reset-defaults
 NIL
@@ -743,7 +774,7 @@ NIL
 T
 OBSERVER
 NIL
-NIL
+R
 NIL
 NIL
 1
@@ -756,7 +787,7 @@ CHOOSER
 model-version
 model-version
 "base" "schooling" "hunting"
-1
+2
 
 SLIDER
 923
@@ -767,7 +798,7 @@ fish-separation
 fish-separation
 0.1
 10
-0.1
+0.2
 0.1
 1
 NIL
@@ -834,25 +865,25 @@ deg
 HORIZONTAL
 
 SLIDER
-1196
-282
-1467
-315
+1197
+236
+1468
+269
 dolphin-communication-range
 dolphin-communication-range
 1
-100
-99.0
+max-pxcor
+16.0
 1
 1
 NIL
 HORIZONTAL
 
 SWITCH
-1197
-328
-1382
-361
+1198
+285
+1383
+318
 visible-comm-links
 visible-comm-links
 0
@@ -877,7 +908,7 @@ SWITCH
 452
 cluster-labeling
 cluster-labeling
-1
+0
 1
 -1000
 
@@ -921,10 +952,10 @@ color-dolphins
 -1000
 
 BUTTON
-117
-444
-229
-477
+115
+508
+227
+541
 go one tick
 go
 NIL
@@ -932,7 +963,7 @@ NIL
 T
 OBSERVER
 NIL
-NIL
+F
 NIL
 NIL
 1
@@ -962,7 +993,7 @@ PLOT
 22
 1838
 201
-Population and Fish Eaten
+Fish Population
 Time
 Count
 0.0
@@ -976,15 +1007,15 @@ PENS
 "Fish Population" 1.0 0 -13345367 true "" "plot count fishes"
 
 SLIDER
-1199
-234
-1396
-267
+1198
+395
+1395
+428
 dolphin-separation
 dolphin-separation
 0
 10
-10.0
+9.6
 0.1
 1
 NIL
@@ -1014,6 +1045,63 @@ max-dolphin-turn
 1
 deg
 HORIZONTAL
+
+MONITOR
+203
+349
+313
+398
+NIL
+starting-seed
+0
+1
+12
+
+INPUTBOX
+20
+349
+181
+409
+input-seed
+10.0
+1
+0
+Number
+
+SLIDER
+1198
+337
+1454
+370
+dolphin-memory-size
+dolphin-memory-size
+1
+25
+5.0
+1
+1
+markers
+HORIZONTAL
+
+TEXTBOX
+23
+321
+355
+366
+Set input-seed to 0 to generate a random seed
+12
+0.0
+1
+
+TEXTBOX
+1208
+428
+1358
+446
+set to 0 to disable
+12
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
