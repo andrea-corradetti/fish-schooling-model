@@ -797,6 +797,121 @@ to set-flocking
   set color-dolphins false
   set color-clusters false
 end
+
+
+to set-clustered
+  ;; Setup settings
+  set initial-fish 250
+  set initial-dolphins 0
+  set fish-vision-range 10
+  set dolphin-vision-range 10
+  set fish-speed 1.0
+  set dolphin-speed 1.5
+  set max-fish-turn 180
+  set max-dolphin-turn 180
+
+  ;; Reproduction settings
+  set enable-reproduction false
+  set reproduction-interval 90
+
+  ;; Input seed
+  set input-seed 0
+  set starting-seed 0
+
+  ;; Fish schooling settings
+  set fish-separation 1.0
+  set max-separate-turn 42.0
+  set max-align-turn 30.0
+  set max-cohere-turn 50.0
+
+  ;; Dolphin hunting settings
+  set dolphin-communication-range 5
+  set dolphin-memory-size 5
+  set dolphin-separation 0.0
+
+  ;; Toggle settings
+  set enable-debug false
+  set visible-comm-links false
+  set cluster-labeling false
+  set color-dolphins false
+  set color-clusters false
+end
+
+to set-linear
+  ;; Setup settings
+  set initial-fish 250
+  set initial-dolphins 0
+  set fish-vision-range 10
+  set dolphin-vision-range 10
+  set fish-speed 1.0
+  set dolphin-speed 1.5
+  set max-fish-turn 180
+  set max-dolphin-turn 180
+
+  ;; Reproduction settings
+  set enable-reproduction false
+  set reproduction-interval 90
+
+  ;; Input seed
+  set input-seed 0
+  set starting-seed -603257362
+
+  ;; Fish schooling settings
+  set fish-separation 1.0
+  set max-separate-turn 35.0
+  set max-align-turn 57.0
+  set max-cohere-turn 21.0
+
+  ;; Dolphin hunting settings
+  set dolphin-communication-range 5
+  set dolphin-memory-size 5
+  set dolphin-separation 0.0
+
+  ;; Toggle settings
+  set enable-debug false
+  set visible-comm-links false
+  set cluster-labeling false
+  set color-dolphins false
+  set color-clusters false
+end
+
+to set-separated
+  ;; Setup settings
+  set initial-fish 250
+  set initial-dolphins 0
+  set fish-vision-range 10
+  set dolphin-vision-range 10
+  set fish-speed 1.0
+  set dolphin-speed 1.5
+  set max-fish-turn 180
+  set max-dolphin-turn 215
+
+  ;; Reproduction settings
+  set enable-reproduction false
+  set reproduction-interval 90
+
+  ;; Input seed
+  set input-seed 0
+  set starting-seed -528409625
+
+  ;; Fish schooling settings
+  set fish-separation 3.0
+  set max-separate-turn 26.4
+  set max-align-turn 11.3
+  set max-cohere-turn 3.9
+
+  ;; Dolphin hunting settings
+  set dolphin-communication-range 5
+  set dolphin-memory-size 5
+  set dolphin-separation 0.0
+
+  ;; Toggle settings
+  set enable-debug false
+  set visible-comm-links false
+  set cluster-labeling false
+  set color-dolphins false
+  set color-clusters false
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 415
@@ -834,7 +949,7 @@ initial-dolphins
 initial-dolphins
 0
 20
-0.0
+5.0
 1
 1
 NIL
@@ -849,7 +964,7 @@ initial-fish
 initial-fish
 0
 1000
-250.0
+1.0
 10
 1
 NIL
@@ -879,7 +994,7 @@ dolphin-vision-range
 dolphin-vision-range
 0
 max-vision-range
-10.0
+14.0
 1
 1
 NIL
@@ -943,7 +1058,7 @@ dolphin-speed
 dolphin-speed
 0
 3
-1.5
+0.3
 0.1
 1
 NIL
@@ -1000,7 +1115,7 @@ CHOOSER
 model-version
 model-version
 "base" "schooling" "hunting"
-1
+2
 
 SLIDER
 949
@@ -1041,7 +1156,7 @@ max-separate-turn
 max-separate-turn
 1
 90
-11.0
+35.0
 0.1
 1
 deg
@@ -1056,7 +1171,7 @@ max-align-turn
 max-align-turn
 0
 90
-12.0
+57.0
 .1
 1
 deg
@@ -1071,7 +1186,7 @@ max-cohere-turn
 max-cohere-turn
 0
 90
-4.0
+21.0
 .1
 1
 deg
@@ -1086,7 +1201,7 @@ dolphin-communication-range
 dolphin-communication-range
 1
 max-pxcor
-5.0
+19.0
 1
 1
 patches
@@ -1435,42 +1550,135 @@ average-fish-distance
 1
 12
 
+BUTTON
+415
+589
+526
+622
+Do flocking
+set-flocking
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+TEXTBOX
+419
+551
+657
+611
+Demo schooling configurations\nAdd dolphins to see hunting
+12
+0.0
+1
+
+BUTTON
+415
+634
+539
+667
+Do clustered
+set-clustered
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+416
+679
+512
+712
+Do linear
+set-linear
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+415
+718
+546
+751
+Do separated
+set-separated
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
 @#$#@#$#@
-## WHAT IS IT?
+## How to Run
 
-(a general understanding of what the model is trying to show or explain)
+1. Open the `dolphins.txt` file in NetLogo.
+2. Install the dbscan plugin when prompted.
 
-## HOW IT WORKS
+The model has been tested with NetLogo 6.4.0.
 
-(what rules the agents use to create the overall behavior of the model)
+# Predator-Prey Dynamics Simulation
 
-## HOW TO USE IT
+This repository contains code and resources for an agent-based model (ABM) simulation of predator-prey dynamics between dolphins (predators) and fish (prey). The models were developed to explore and analyze emergent behaviors and interactions.
 
-(how to use the model, including a description of each of the items in the Interface tab)
+## Overview
 
-## THINGS TO NOTICE
+Three models of increasing complexity are implemented:
 
-(suggested things for the user to notice while running the model)
+1. **Baseline Model**: Simple chasing and fleeing behavior between dolphins and fish.
+2. **Schooling Model**: Adds fish schooling behavior, inspired by Craig Reynolds' Boids model.
+3. **Hunting Strategy Model**: Introduces dolphin communication for coordinated hunting.
 
-## THINGS TO TRY
+## Features
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+- Fish and dolphins interact in a 2D toroidal space.
+- Adjustable parameters for speed, vision range, and turning angles.
+- Visualizations of emergent behaviors such as divergence, schooling, and coordinated hunting.
+- Reproducible experiments included in the model
 
-## EXTENDING THE MODEL
+## How to use it
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+The model includes some demo presets for fish behavior; choose one, then tweak dolphin numbers.
+Have fun experimenting with other parameters
 
-## NETLOGO FEATURES
+## Implementation notes
 
+The model uses the dbscan netlogo extension, developed by Christopher Frantz. It is available at https://github.com/chrfrantz/NetLogo-Extension-DBSCAN
+The extension implements [DBSCAN](https://en.wikipedia.org/wiki/DBSCAN) for densitity based clustering.
 (interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
 
-## RELATED MODELS
+## Credits and Reference
 
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+This model adapts the flocking behavior from the following model:
 
-## CREDITS AND REFERENCES
+- Wilensky, U. (1998). NetLogo Flocking model. http://ccl.northwestern.edu/netlogo/models/Flocking. Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+This model was created for the course Complex Systems & Network Science at the University of Bologna.
+
+## Contact
+
+For questions or contributions, contact:
+Andrea Corradetti  
+[andrea.corradetti2@studio.unibo.it](mailto:andrea.corradetti2@studio.unibo.it)
 @#$#@#$#@
 default
 true
