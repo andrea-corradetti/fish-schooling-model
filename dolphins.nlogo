@@ -49,6 +49,7 @@ globals [
   old-cluster-labeling
   old-color-clusters
   old-mean-fish-lifespan
+  total-fish-lifespan
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -69,7 +70,7 @@ to setup
     if enable-debug [show word "Created with color " get-color-for who]
     set color get-color-for who
     set shape "shark"
-    set size 1.5
+    set size 3
     set fish-eaten 0
     set communication-range dolphin-communication-range
     setxy random-xcor random-ycor
@@ -77,7 +78,7 @@ to setup
   ]
 
   create-fishes initial-fish [
-    set color blue
+    set color blue - 2 + random 7 ;; add random shade
     set shape "fish"
     set default-shape "fish"
     set size 1
@@ -117,7 +118,7 @@ end
 
 
 to set-fish-color-to-default
-  ask fishes [set color blue]
+  ask fishes [set color blue - 2 + random 7 ] ;; add random shade
 end
 
 ;; Button procedure
@@ -129,10 +130,24 @@ to go
     set time-alive time-alive + 1
   ]
 
-
   ask dolphins [
     perform-dolphin-behaviors
   ]
+
+  repeat 5 [
+    ask fishes [ fd fish-speed / 5 ]
+
+    ask dolphins [
+    ifelse chasing-target != nobody [
+      move-at-most chasing-target dolphin-speed / 5
+        if distance chasing-target < [size] of self [ consume-fish chasing-target ]
+    ] [
+      fd dolphin-speed / 5
+    ]
+  ] display ]
+
+
+
 
   if color-clusters [ color-fishes-by-cluster ]
   if color-clusters-was-turned-off [ set-fish-color-to-default ]
@@ -191,19 +206,19 @@ to perform-fish-behaviors
   if any? dolphins in-radius fish-vision-range [
     let predator min-one-of dolphins in-radius fish-vision-range [distance myself]
     turn-towards (subtract-headings towards predator 180) max-fish-turn
-    fd fish-speed
+    ;fd fish-speed
     stop
   ]
 
   if version >= 1 [
     school
-    fd fish-speed
+    ;fd fish-speed
     stop
   ]
 
 
   roam max-fish-turn
-  fd fish-speed
+  ;fd fish-speed
 end
 
 
@@ -365,16 +380,16 @@ to perform-dolphin-behaviors
 
     if heading = [heading] of nearest-neighbor [
       turn-towards (subtract-headings towards nearest-neighbor 180) max-dolphin-turn
-      fd dolphin-speed
+      ;fd dolphin-speed
       stop
     ]
   ]
 
   if target != nobody [
-    create-chase-link-to target ;; Draw link from dolphin to target
+    create-chase-link-to target;; Draw link from dolphin to target
     turn-towards towards target max-dolphin-turn
-    move-at-most target dolphin-speed
-    if distance target < 1 [ consume-fish target ]
+    ;move-at-most target dolphin-speed
+    ;if distance target < 1 [ consume-fish target ]
     stop
   ]
 
@@ -386,12 +401,11 @@ to perform-dolphin-behaviors
     set chasing-target closest-fish
     create-chase-link-to closest-fish
     turn-towards towards chasing-target max-dolphin-turn
-    move-at-most closest-fish dolphin-speed
     stop
   ]
 
   roam max-dolphin-turn
-  fd dolphin-speed
+  ;fd dolphin-speed
 
 end
 
@@ -410,8 +424,9 @@ end
 to consume-fish [prey]
   if enable-debug [ show word "Ate fish " prey ]
   ask prey [
-    ;hide-vision-circle
+    set total-fish-lifespan total-fish-lifespan + time-alive
     die
+
   ]
   ask chase-links with [end1 = myself] [ die ]  ;; Remove the link to the eaten fish
   set chasing-target nobody
@@ -601,6 +616,7 @@ end
 
 
 to-report cv-fish-eaten
+  if mean-fish-eaten = 0 [ report 0 ]
   report (stddev-fish-eaten / mean-fish-eaten) * 100
 end
 
@@ -624,6 +640,33 @@ to-report average-dolphin-distance
   ;; Calculate and report the average distance
   report total-distance / num-pairs
 end
+
+
+to-report average-fish-distance
+  let total-distance 0
+  let num-pairs 0
+
+  ;; Loop over all pairs of dolphins
+  ask fishes [
+    let me-self self  ;; Store the current dolphin
+    ask other fishes [  ;; Compare with other dolphins
+      set total-distance total-distance + distance me-self
+      set num-pairs num-pairs + 1
+    ]
+  ]
+
+  ;; Avoid division by zero
+  if num-pairs = 0 [ report 0 ]
+
+  ;; Calculate and report the average distance
+  report total-distance / num-pairs
+end
+
+to-report average-fish-lifespan
+  if total-fish-lifespan = 0 or total-fish-eaten = 0 [ report 0 ]
+  report total-fish-lifespan / (initial-fish - count fishes)
+end
+
 
 
 
@@ -713,17 +756,58 @@ to update-cluster-fish-plot
     set-plot-pen-color c  ;; Reset pen color for the legend
   ])
 end
+
+
+;;;;; DEMO CONFIGURATIONS
+
+to set-flocking
+  ;; Setup settings
+  set initial-fish 250
+  set initial-dolphins 0
+  set fish-vision-range 10
+  set dolphin-vision-range 10
+  set fish-speed 1.0
+  set dolphin-speed 1.5
+  set max-fish-turn 180
+  set max-dolphin-turn 180
+
+  ;; Reproduction settings
+  set enable-reproduction false
+  set reproduction-interval 90
+
+  ;; Input seed
+  set input-seed 0
+  set starting-seed 0
+
+  ;; Fish schooling settings
+  set fish-separation 1.0
+  set max-separate-turn 11.0
+  set max-align-turn 12.0
+  set max-cohere-turn 4.0
+
+  ;; Dolphin hunting settings
+  set dolphin-communication-range 5
+  set dolphin-memory-size 5
+  set dolphin-separation 0
+
+  ;; Toggle settings
+  set enable-debug false
+  set visible-comm-links false
+  set cluster-labeling false
+  set color-dolphins false
+  set color-clusters false
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
-430
-20
-891
-482
+415
+14
+918
+518
 -1
 -1
-13.73
+9.71
 1
-10
+12
 1
 1
 1
@@ -731,66 +815,66 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+-25
+25
+-25
+25
 1
 1
 1
 ticks
-60.0
+30.0
 
 SLIDER
-206
-69
-378
-102
+201
+63
+373
+96
 initial-dolphins
 initial-dolphins
 0
 20
-5.0
+0.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-21
-69
-193
-102
+16
+63
+188
+96
 initial-fish
 initial-fish
 0
 1000
-150.0
+250.0
 10
 1
 NIL
 HORIZONTAL
 
 SLIDER
-20
-113
-194
-146
+15
+107
+189
+140
 fish-vision-range
 fish-vision-range
 0
 max-vision-range
-5.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-208
-113
-410
-146
+203
+107
+405
+140
 dolphin-vision-range
 dolphin-vision-range
 0
@@ -836,29 +920,14 @@ NIL
 0
 
 SLIDER
-22
-159
-194
-192
+17
+153
+189
+186
 fish-speed
 fish-speed
-0
-max-fish-speed
-1.0
-0.5
-1
-NIL
-HORIZONTAL
-
-SLIDER
-210
-159
-382
-192
-dolphin-speed
-dolphin-speed
-0
-max-dolphin-speed
+0.1
+3
 1.0
 0.1
 1
@@ -866,10 +935,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-925
-134
-1171
-167
+205
+153
+377
+186
+dolphin-speed
+dolphin-speed
+0
+3
+1.5
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+947
+131
+1193
+164
 reproduction-interval
 reproduction-interval
 50
@@ -881,10 +965,10 @@ ticks
 HORIZONTAL
 
 SWITCH
-927
-85
-1103
-118
+949
+82
+1125
+115
 enable-reproduction
 enable-reproduction
 1
@@ -909,38 +993,38 @@ NIL
 1
 
 CHOOSER
-927
-24
-1093
-69
+949
+21
+1115
+66
 model-version
 model-version
 "base" "schooling" "hunting"
-0
+1
 
 SLIDER
-923
-238
-1131
-271
+949
+235
+1182
+268
 fish-separation
 fish-separation
-0.1
-10
-3.0
-0.1
+0
+5
+1.0
+0.25
 1
-NIL
+patches
 HORIZONTAL
 
 SLIDER
-20
-207
-254
-240
-max-fish-turn
-max-fish-turn
 15
+201
+249
+234
+max-fish-turn
+max-fish-turn
+0
 360
 180.0
 5
@@ -949,46 +1033,46 @@ deg
 HORIZONTAL
 
 SLIDER
-923
-282
-1146
-315
+949
+279
+1185
+312
 max-separate-turn
 max-separate-turn
 1
-360
-76.0
-1
+90
+11.0
+0.1
 1
 deg
 HORIZONTAL
 
 SLIDER
-923
-327
-1113
-360
+949
+324
+1172
+357
 max-align-turn
 max-align-turn
-1
-360
-344.0
-1
+0
+90
+12.0
+.1
 1
 deg
 HORIZONTAL
 
 SLIDER
-923
-372
-1131
-405
+949
+369
+1170
+402
 max-cohere-turn
 max-cohere-turn
-1
-360
-270.0
-1
+0
+90
+4.0
+.1
 1
 deg
 HORIZONTAL
@@ -996,7 +1080,7 @@ HORIZONTAL
 SLIDER
 1197
 236
-1468
+1480
 269
 dolphin-communication-range
 dolphin-communication-range
@@ -1005,14 +1089,14 @@ max-pxcor
 5.0
 1
 1
-NIL
+patches
 HORIZONTAL
 
 SWITCH
-921
-529
-1106
-562
+958
+444
+1143
+477
 visible-comm-links
 visible-comm-links
 0
@@ -1031,10 +1115,10 @@ enable-debug
 -1000
 
 SWITCH
-1121
-530
-1288
-563
+1158
+445
+1325
+478
 cluster-labeling
 cluster-labeling
 1
@@ -1059,10 +1143,10 @@ true
 PENS
 
 SWITCH
-920
-578
-1078
-611
+957
+493
+1115
+526
 color-dolphins
 color-dolphins
 0
@@ -1087,10 +1171,10 @@ NIL
 1
 
 TEXTBOX
-924
-199
-1131
-237
+950
+196
+1157
+234
 Fish schooling settings
 16
 0.0
@@ -1127,16 +1211,16 @@ PENS
 SLIDER
 1196
 337
-1393
+1457
 370
 dolphin-separation
 dolphin-separation
 0
-10
+5
 0.0
-0.1
+0.25
 1
-NIL
+patches
 HORIZONTAL
 
 TEXTBOX
@@ -1150,10 +1234,10 @@ Setup settings
 1
 
 SLIDER
-20
-251
-230
-284
+15
+245
+225
+278
 max-dolphin-turn
 max-dolphin-turn
 45
@@ -1222,12 +1306,12 @@ set to 0 to disable
 1
 
 MONITOR
-1405
-42
-1549
-91
+1381
+24
+1544
+73
 NIL
-mean-fish-lifespan
+average-fish-lifespan
 2
 1
 12
@@ -1250,10 +1334,10 @@ true
 PENS
 
 SWITCH
-1118
-579
-1273
-612
+1155
+494
+1310
+527
 color-clusters
 color-clusters
 1
@@ -1294,10 +1378,10 @@ cv-fish-eaten
 12
 
 MONITOR
-1358
-543
-1554
-592
+1347
+549
+1543
+598
 NIL
 average-dolphin-distance
 2
@@ -1321,6 +1405,35 @@ false
 "" ""
 PENS
 "Distance" 1.0 0 -16777216 true "" "plot average-dolphin-distance"
+
+PLOT
+1108
+612
+1308
+762
+Average fish distance
+Time
+Distance
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot average-fish-distance"
+
+MONITOR
+1106
+550
+1275
+599
+NIL
+average-fish-distance
+2
+1
+12
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1686,6 +1799,209 @@ NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="cv2" repetitions="20" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>cv-fish-eaten</metric>
+    <metric>starting-seed</metric>
+    <runMetricsCondition>not any? fishes</runMetricsCondition>
+    <enumeratedValueSet variable="initial-dolphins">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-vision-range">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-fish-turn">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="model-version">
+      <value value="&quot;base&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-fish">
+      <value value="500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="color-clusters">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="input-seed">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-separation">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-dolphin-turn">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-vision-range">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-speed">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cluster-labeling">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-speed">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="enable-debug">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="school2" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>mean-fish-lifespan</metric>
+    <metric>average-fish-distance</metric>
+    <metric>cv-fish-eaten</metric>
+    <metric>mean-fish-eaten</metric>
+    <metric>stddev-fish-eaten</metric>
+    <metric>variance-fish-eaten</metric>
+    <runMetricsCondition>ticks mod 10 = 0</runMetricsCondition>
+    <enumeratedValueSet variable="color-dolphins">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-dolphins">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-separate-turn">
+      <value value="0"/>
+      <value value="15"/>
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-vision-range">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-fish-turn">
+      <value value="120"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="model-version">
+      <value value="&quot;schooling&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-fish">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-cohere-turn">
+      <value value="0"/>
+      <value value="15"/>
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-dolphin-turn">
+      <value value="120"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-vision-range">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-speed">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-separation">
+      <value value="1"/>
+      <value value="1.5"/>
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-align-turn">
+      <value value="0"/>
+      <value value="15"/>
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-speed">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="enable-debug">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="school3" repetitions="3" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>mean-fish-lifespan</metric>
+    <metric>average-fish-distance</metric>
+    <metric>cv-fish-eaten</metric>
+    <metric>mean-fish-eaten</metric>
+    <metric>stddev-fish-eaten</metric>
+    <metric>variance-fish-eaten</metric>
+    <enumeratedValueSet variable="color-dolphins">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-dolphins">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="enable-reproduction">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-separate-turn">
+      <value value="5"/>
+      <value value="15"/>
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-vision-range">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-fish-turn">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="visible-comm-links">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="model-version">
+      <value value="&quot;schooling&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="reproduction-interval">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-fish">
+      <value value="250"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-memory-size">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="color-clusters">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="input-seed">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-cohere-turn">
+      <value value="5"/>
+      <value value="15"/>
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-separation">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-communication-range">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-dolphin-turn">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-vision-range">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dolphin-speed">
+      <value value="1.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="cluster-labeling">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-separation">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="enable-debug">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="max-align-turn">
+      <value value="5"/>
+      <value value="15"/>
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="fish-speed">
+      <value value="1"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
