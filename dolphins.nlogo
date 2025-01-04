@@ -116,11 +116,6 @@ end
 ;; MAIN LOOP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-to set-fish-color-to-default
-  ask fishes [set color blue - 2 + random 7 ] ;; add random shade
-end
-
 ;; Button procedure
 to go
   if not any? fishes [ stop ]
@@ -146,9 +141,6 @@ to go
     ]
   ] display ]
 
-
-
-
   if color-clusters [ color-fishes-by-cluster ]
   if color-clusters-was-turned-off [ set-fish-color-to-default ]
 
@@ -159,6 +151,17 @@ to go
   set old-color-clusters color-clusters
 
   tick
+end
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; DISPLAY
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+to set-fish-color-to-default
+  ask fishes [set color blue - 2 + random 7 ] ;; add random shade
 end
 
 
@@ -174,7 +177,6 @@ to color-fishes-by-cluster
   ])
 end
 
-
 to update-cluster-labels
   delete-labels
   ask one-of fishes [
@@ -184,16 +186,8 @@ end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; MOVEMENT
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FISH BEHAVIORS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 to perform-fish-behaviors
   set time-since-reproduction time-since-reproduction + 1
@@ -221,33 +215,6 @@ to perform-fish-behaviors
   ;fd fish-speed
 end
 
-
-
-
-to show-vision-circle [vision-range]
-  if not any? circles with [owner = [who] of myself] [
-    hatch-circles 1 [
-      setxy [xcor] of myself [ycor] of myself
-      set owner [who] of myself
-      set color [color] of myself + 2               ;; TODO set trasparency
-      set size vision-range * 2         ;; Size scaled to match vision range
-      set shape "circle outline"
-      set hidden? false
-    ]
-  ]
-  ask circles with [(owner = [who] of myself)] [
-    setxy [xcor] of myself [ycor] of myself      ;; follow with bind xy
-  ]
-end
-
-to hide-vision-circle
-  ask circles with [owner = [who] of myself] [
-    die
-  ]
-end
-
-
-
 to reproduce
   hatch 1 [
     set size 1
@@ -258,7 +225,7 @@ end
 
 
 
-;;; SCHOOLING (reproduced from flocking model included with NetLogo)
+;;;MOVEMENT and SCHOOLING (reproduced from flocking model included with NetLogo)
 
 to school
   find-schoolmates
@@ -290,14 +257,10 @@ to separate [neighbor]
   turn-away ([heading] of neighbor) max-separate-turn
 end
 
-;;; ALIGN
-
 to align
   turn-towards average-schoolmate-heading max-align-turn
 end
 
-
-;;; MOVEMENT
 
 to turn-towards [new-heading max-turn]
   turn-at-most (subtract-headings new-heading heading) max-turn
@@ -316,7 +279,6 @@ to turn-at-most [turn max-turn]
         [ lt max-turn ] ]
     [ rt turn ]
 end
-
 
 
 to-report average-schoolmate-heading
@@ -346,8 +308,6 @@ to-report average-heading-towards-schoolmates
     [ report heading ]
     [ report atan x-component y-component ]
 end
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -380,7 +340,6 @@ to perform-dolphin-behaviors
 
     if heading = [heading] of nearest-neighbor [
       turn-towards (subtract-headings towards nearest-neighbor 180) max-dolphin-turn
-      ;fd dolphin-speed
       stop
     ]
   ]
@@ -388,8 +347,6 @@ to perform-dolphin-behaviors
   if target != nobody [
     create-chase-link-to target;; Draw link from dolphin to target
     turn-towards towards target max-dolphin-turn
-    ;move-at-most target dolphin-speed
-    ;if distance target < 1 [ consume-fish target ]
     stop
   ]
 
@@ -405,8 +362,6 @@ to perform-dolphin-behaviors
   ]
 
   roam max-dolphin-turn
-  ;fd dolphin-speed
-
 end
 
 
@@ -433,7 +388,10 @@ to consume-fish [prey]
   set fish-eaten fish-eaten + 1
 end
 
-;; Communication for hunting
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; DOLPHIN COMMUNICATION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 to draw-comm-links
   ask my-comm-links [die] ;; TODO change this for performance
@@ -668,8 +626,6 @@ to-report average-fish-lifespan
 end
 
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; PLOTTING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -758,7 +714,9 @@ to update-cluster-fish-plot
 end
 
 
-;;;;; DEMO CONFIGURATIONS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; DEMO CONFIGURATIONS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to set-flocking
   ;; Setup settings
